@@ -1,0 +1,60 @@
+{
+  "expo": {
+    "name": "challenge-fiap-atom",
+    "slug": "challenge-fiap-atom",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "O NoteZ usa a câmera para escanear texto (OCR) de fotos e criar flashcards mais rápido."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.anonymous.challengefiapatom"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "O NoteZ usa a câmera para escanear texto (OCR) de fotos e criar flashcards mais rápido."
+        }
+      ],
+      [
+        "expo-mlkit-ocr",
+        {
+          "iosEngine": "auto"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "16.4"
+          }
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "6c27168c-338e-45bc-a39b-4567bdd25dc4"
+      }
+    }
+  }
+}
