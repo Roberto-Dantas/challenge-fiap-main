@@ -32,14 +32,14 @@ export default function ScanTextButton({
       {variant === "full" ? (
         <Pressable style={styles.fullButton} onPress={() => setScannerVisible(true)}>
           <View style={styles.fullIconWrap}>
-            <Ionicons name="camera-outline" size={20} color={colors.white} />
+            <Ionicons name="images-outline" size={20} color={colors.white} />
           </View>
           <Text style={styles.fullButtonText}>{label}</Text>
           <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
         </Pressable>
       ) : (
         <Pressable style={styles.compactButton} onPress={() => setScannerVisible(true)}>
-          <Ionicons name="camera-outline" size={16} color={colors.primary} />
+          <Ionicons name="images-outline" size={16} color={colors.primary} />
           <Text style={styles.compactButtonText}>{label}</Text>
         </Pressable>
       )}

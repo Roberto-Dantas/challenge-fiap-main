@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import CreateFlashcardModal from "../components/CreateFlashcardModal";
+import OcrScannerModal from "../components/OcrScannerModal";
 import { useLibrary } from "../context/LibraryContext";
 import { useSettings } from "../context/SettingsContext";
 import { ContentViewMode, LibraryStackParamList } from "../types";
@@ -26,28 +27,9 @@ const viewModes: { key: ContentViewMode; label: string }[] = [
   { key: "resumos", label: "Resumos" },
 ];
 
-const mockContent: Record<
-  Exclude<ContentViewMode, "flashcard">,
-  { title: string; items: string[] }
-> = {
-  exercicios: {
-    title: "Exercícios",
-    items: [
-      "1. Resolva: 2x + 5 = 15",
-      "2. Determine o valor de x: 3x - 7 = 8",
-      "3. Resolva: 5(x + 2) = 25",
-      "4. Encontre x: x/4 + 3 = 7",
-    ],
-  },
-  resumos: {
-    title: "Resumos",
-    items: [
-      "Equações do 1º grau possuem expoente 1 na incógnita.",
-      "Para resolver, isole a incógnita usando operações inversas.",
-      "Sempre verifique a solução substituindo na equação original.",
-      "Equações equivalentes mantêm o mesmo conjunto solução.",
-    ],
-  },
+const emptyContent: Record<Exclude<ContentViewMode, "flashcard">, { title: string }> = {
+  exercicios: { title: "Exercícios" },
+  resumos: { title: "Resumos" },
 };
 
 export default function ContentDetailScreen({ navigation, route }: Props) {
@@ -59,6 +41,11 @@ export default function ContentDetailScreen({ navigation, route }: Props) {
   const [activeMode, setActiveMode] = useState<ContentViewMode>("flashcard");
   const [searchQuery, setSearchQuery] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
+  const [ocrModalOpenFor, setOcrModalOpenFor] = useState<"exercicios" | "resumos" | null>(null);
+  const [ocrEntries, setOcrEntries] = useState<Record<"exercicios" | "resumos", string[]>>({
+    exercicios: [],
+    resumos: [],
+  });
 
   const flashcards = getFlashcardsByTopic(topicId);
   const dueFlashcards = flashcards.filter(
@@ -79,11 +66,11 @@ export default function ContentDetailScreen({ navigation, route }: Props) {
     );
   }, [flashcards, searchQuery]);
 
-  const mockItems =
+  const currentEntries =
     activeMode !== "flashcard"
-      ? mockContent[activeMode].items.filter((item) =>
-          item.toLowerCase().includes(searchQuery.toLowerCase()),
-        )
+      ? ocrEntries[activeMode].filter((item) =>
+        item.toLowerCase().includes(searchQuery.toLowerCase()),
+      )
       : [];
 
   function handleStartStudy(startIndex = 0, flashcardId?: string) {
@@ -196,15 +183,37 @@ export default function ContentDetailScreen({ navigation, route }: Props) {
   }
 
   function renderMockContent() {
-    const content = mockContent[activeMode as Exclude<ContentViewMode, "flashcard">];
+    const content = emptyContent[activeMode as Exclude<ContentViewMode, "flashcard">];
 
     return (
       <>
-        <Text style={styles.sectionTitle}>{content.title}</Text>
-        {mockItems.length === 0 ? (
-          <Text style={styles.emptyText}>Nenhum item encontrado</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>{content.title}</Text>
+          <Pressable
+            style={styles.addButton}
+            onPress={() => setOcrModalOpenFor(activeMode as "exercicios" | "resumos")}
+          >
+            <Ionicons name="document-text-outline" size={18} color={colors.white} />
+            <Text style={styles.addButtonText}>OCR</Text>
+          </Pressable>
+        </View>
+
+        {currentEntries.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="document-outline" size={48} color={colors.textMuted} />
+            <Text style={styles.emptyText}>Nenhum texto registrado</Text>
+            <Text style={styles.emptySubtext}>
+              Selecione uma imagem da galeria para extrair texto e salvar aqui.
+            </Text>
+            <Pressable
+              style={styles.emptyButton}
+              onPress={() => setOcrModalOpenFor(activeMode as "exercicios" | "resumos")}
+            >
+              <Text style={styles.emptyButtonText}>Selecionar arquivo</Text>
+            </Pressable>
+          </View>
         ) : (
-          mockItems.map((item, index) => (
+          currentEntries.map((item, index) => (
             <View key={`${activeMode}-${index}`} style={styles.contentCard}>
               <View style={styles.contentIcon}>
                 <Ionicons
@@ -290,221 +299,237 @@ export default function ContentDetailScreen({ navigation, route }: Props) {
           ? renderFlashcardContent()
           : renderMockContent()}
       </ScrollView>
+
+      {activeMode !== "flashcard" && (
+        <OcrScannerModal
+          visible={Boolean(ocrModalOpenFor && ocrModalOpenFor === activeMode)}
+          onClose={() => setOcrModalOpenFor(null)}
+          onConfirm={(text) => {
+            const mode = activeMode as "exercicios" | "resumos";
+            setOcrEntries((prev) => ({
+              ...prev,
+              [mode]: [...prev[mode], text],
+            }));
+            setOcrModalOpenFor(null);
+          }}
+          title={activeMode === "exercicios" ? "OCR - Exercícios" : "OCR - Resumos"}
+        />
+      )}
     </View>
   );
 }
 
 const createStyles = (colors: ThemeColors) =>
   StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingBottom: 24,
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
-  },
-  headerTop: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 20,
-  },
-  headerActions: {
-    flexDirection: "row",
-    gap: 16,
-  },
-  subjectTitle: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: colors.white,
-    marginBottom: 4,
-  },
-  subjectSubtitle: {
-    fontSize: 14,
-    color: "rgba(255,255,255,0.85)",
-    marginBottom: 4,
-  },
-  topicTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "rgba(255,255,255,0.95)",
-    marginBottom: 20,
-  },
-  tabs: {
-    flexDirection: "row",
-    marginBottom: 16,
-  },
-  tab: {
-    marginRight: 24,
-    paddingBottom: 8,
-  },
-  tabText: {
-    fontSize: 15,
-    color: "rgba(255,255,255,0.65)",
-    fontWeight: "500",
-  },
-  tabTextActive: {
-    color: colors.white,
-    fontWeight: "700",
-  },
-  tabIndicator: {
-    height: 2,
-    backgroundColor: colors.white,
-    borderRadius: 1,
-    marginTop: 6,
-  },
-  searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.2)",
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    gap: 8,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 15,
-    color: colors.white,
-  },
-  content: {
-    flex: 1,
-  },
-  contentContainer: {
-    padding: 20,
-    paddingBottom: 32,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: colors.text,
-  },
-  addButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: colors.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-  },
-  addButtonText: {
-    color: colors.white,
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  studyBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.cardBackground,
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: colors.primary,
-  },
-  studyBannerIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.cardBackground,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 12,
-  },
-  studyBannerText: {
-    flex: 1,
-  },
-  studyBannerTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: colors.text,
-  },
-  studyBannerSubtitle: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  contentCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.cardBackground,
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    shadowColor: colors.cardShadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  contentIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: "#EFF6FF",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 12,
-  },
-  flashcardContent: {
-    flex: 1,
-  },
-  flashcardFront: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: colors.text,
-    marginBottom: 4,
-  },
-  flashcardBack: {
-    fontSize: 13,
-    color: colors.textSecondary,
-  },
-  contentText: {
-    flex: 1,
-    fontSize: 15,
-    color: colors.text,
-    lineHeight: 22,
-  },
-  emptyState: {
-    alignItems: "center",
-    paddingVertical: 32,
-  },
-  emptyText: {
-    textAlign: "center",
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: "600",
-    marginTop: 16,
-  },
-  emptySubtext: {
-    textAlign: "center",
-    color: colors.textMuted,
-    fontSize: 14,
-    marginTop: 8,
-    paddingHorizontal: 20,
-  },
-  emptyButton: {
-    marginTop: 20,
-    backgroundColor: colors.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 12,
-  },
-  emptyButtonText: {
-    color: colors.white,
-    fontSize: 15,
-    fontWeight: "600",
-  },
-});
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    header: {
+      paddingHorizontal: 20,
+      paddingBottom: 24,
+      borderBottomLeftRadius: 28,
+      borderBottomRightRadius: 28,
+    },
+    headerTop: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 20,
+    },
+    headerActions: {
+      flexDirection: "row",
+      gap: 16,
+    },
+    subjectTitle: {
+      fontSize: 28,
+      fontWeight: "700",
+      color: colors.white,
+      marginBottom: 4,
+    },
+    subjectSubtitle: {
+      fontSize: 14,
+      color: "rgba(255,255,255,0.85)",
+      marginBottom: 4,
+    },
+    topicTitle: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: "rgba(255,255,255,0.95)",
+      marginBottom: 20,
+    },
+    tabs: {
+      flexDirection: "row",
+      marginBottom: 16,
+    },
+    tab: {
+      marginRight: 24,
+      paddingBottom: 8,
+    },
+    tabText: {
+      fontSize: 15,
+      color: "rgba(255,255,255,0.65)",
+      fontWeight: "500",
+    },
+    tabTextActive: {
+      color: colors.white,
+      fontWeight: "700",
+    },
+    tabIndicator: {
+      height: 2,
+      backgroundColor: colors.white,
+      borderRadius: 1,
+      marginTop: 6,
+    },
+    searchContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: "rgba(255,255,255,0.2)",
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      gap: 8,
+    },
+    searchInput: {
+      flex: 1,
+      fontSize: 15,
+      color: colors.white,
+    },
+    content: {
+      flex: 1,
+    },
+    contentContainer: {
+      padding: 20,
+      paddingBottom: 32,
+    },
+    sectionHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 16,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: "700",
+      color: colors.text,
+    },
+    addButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      backgroundColor: colors.primary,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 10,
+    },
+    addButtonText: {
+      color: colors.white,
+      fontSize: 14,
+      fontWeight: "600",
+    },
+    studyBanner: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: colors.cardBackground,
+      borderRadius: 14,
+      padding: 16,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: colors.primary,
+    },
+    studyBannerIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: colors.cardBackground,
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: 12,
+    },
+    studyBannerText: {
+      flex: 1,
+    },
+    studyBannerTitle: {
+      fontSize: 16,
+      fontWeight: "700",
+      color: colors.text,
+    },
+    studyBannerSubtitle: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      marginTop: 2,
+    },
+    contentCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: colors.cardBackground,
+      borderRadius: 14,
+      padding: 16,
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      shadowColor: colors.cardShadow,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06,
+      shadowRadius: 8,
+      elevation: 2,
+    },
+    contentIcon: {
+      width: 36,
+      height: 36,
+      borderRadius: 10,
+      backgroundColor: "#EFF6FF",
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: 12,
+    },
+    flashcardContent: {
+      flex: 1,
+    },
+    flashcardFront: {
+      fontSize: 15,
+      fontWeight: "600",
+      color: colors.text,
+      marginBottom: 4,
+    },
+    flashcardBack: {
+      fontSize: 13,
+      color: colors.textSecondary,
+    },
+    contentText: {
+      flex: 1,
+      fontSize: 15,
+      color: colors.text,
+      lineHeight: 22,
+    },
+    emptyState: {
+      alignItems: "center",
+      paddingVertical: 32,
+    },
+    emptyText: {
+      textAlign: "center",
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: "600",
+      marginTop: 16,
+    },
+    emptySubtext: {
+      textAlign: "center",
+      color: colors.textMuted,
+      fontSize: 14,
+      marginTop: 8,
+      paddingHorizontal: 20,
+    },
+    emptyButton: {
+      marginTop: 20,
+      backgroundColor: colors.primary,
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      borderRadius: 12,
+    },
+    emptyButtonText: {
+      color: colors.white,
+      fontSize: 15,
+      fontWeight: "600",
+    },
+  });

@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { CameraView, useCameraPermissions } from "expo-camera";
-import { useMemo, useRef, useState } from "react";
+import * as ImagePicker from "expo-image-picker";
+import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -17,14 +17,12 @@ import { useSettings } from "../context/SettingsContext";
 import { isValidOcrText, recognizeTextFromImage } from "../services/ocrService";
 import { ThemeColors } from "../theme/colors";
 
-type ScanStep = "camera" | "processing" | "result";
+type ScanStep = "picker" | "processing" | "result";
 
 interface OcrScannerModalProps {
   visible: boolean;
   onClose: () => void;
-  /** Chamado quando o usuário confirma o texto reconhecido (botão "Continuar"). */
   onConfirm: (text: string) => void;
-  /** Título exibido no topo da tela de resultado. Ex: "Texto da frente". */
   title?: string;
 }
 
@@ -32,63 +30,112 @@ export default function OcrScannerModal({
   visible,
   onClose,
   onConfirm,
-  title = "Escanear texto",
+  title = "Selecionar arquivo para OCR",
 }: OcrScannerModalProps) {
   const insets = useSafeAreaInsets();
   const { colors } = useSettings();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
-  const cameraRef = useRef<CameraView>(null);
-  const [permission, requestPermission] = useCameraPermissions();
-  const [step, setStep] = useState<ScanStep>("camera");
-  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [step, setStep] = useState<ScanStep>("picker");
+  const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
   const [recognizedText, setRecognizedText] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isCameraReady, setIsCameraReady] = useState(false);
 
   function resetAndClose() {
-    setStep("camera");
-    setPhotoUri(null);
+    setStep("picker");
+    setSelectedImageUri(null);
     setRecognizedText("");
     setErrorMessage(null);
-    setIsCameraReady(false);
     onClose();
   }
 
-  async function handleCapture() {
-    if (!cameraRef.current || !isCameraReady) return;
+  async function readImageBase64FromUri(uri: string): Promise<string> {
+    const response = await fetch(uri);
+    const blob = await response.blob();
 
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = typeof reader.result === "string" ? reader.result : "";
+        const normalized = result.replace(/^data:.*;base64,/, "").trim();
+
+        if (!normalized) {
+          reject(new Error("A imagem selecionada não gerou base64 válido."));
+          return;
+        }
+
+        resolve(normalized);
+      };
+      reader.onerror = () => reject(new Error("Falha ao converter a imagem para base64."));
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  async function handlePickImage() {
     try {
-      const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.6,
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (!permissionResult.granted) {
+        setErrorMessage(
+          "Você precisa permitir acesso à galeria ou arquivos do sistema para usar o OCR.",
+        );
+        setStep("result");
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        quality: 0.8,
         base64: true,
-        skipProcessing: true,
       });
 
-      if (!photo) return;
+      if (result.canceled || !result.assets || result.assets.length === 0) {
+        setErrorMessage("Nenhuma imagem foi selecionada.");
+        setStep("result");
+        return;
+      }
 
-      setPhotoUri(photo.uri);
+      const asset = result.assets[0];
+      setSelectedImageUri(asset.uri);
       setStep("processing");
       setErrorMessage(null);
 
-      const result = await recognizeTextFromImage({ uri: photo.uri, base64: photo.base64 });
-      setRecognizedText(result.text);
-      setStep("result");
+      const base64 =
+        typeof asset.base64 === "string" && asset.base64.length > 100
+          ? asset.base64.replace(/^data:.*;base64,/, "").trim()
+          : await readImageBase64FromUri(asset.uri);
+
+      const recognized = await recognizeTextFromImage({
+        uri: asset.uri,
+        base64,
+      });
+
+      const trimmedText = recognized.text.trim();
+      if (!isValidOcrText(trimmedText)) {
+        setErrorMessage("Nenhum texto foi encontrado na imagem selecionada.");
+        setStep("result");
+        return;
+      }
+
+      setRecognizedText(trimmedText);
+      onConfirm(trimmedText);
+      resetAndClose();
     } catch (error: any) {
-      console.warn("Falha ao capturar/reconhecer texto", error);
+      console.warn("Falha ao selecionar/ler imagem do OCR", error);
       setErrorMessage(
         error?.message ??
-          "Não foi possível ler o texto da foto. Tente novamente com mais luz e foco.",
+        "Não foi possível ler o texto da imagem. Tente outro arquivo ou uma imagem com melhor legibilidade.",
       );
       setStep("result");
     }
   }
 
   function handleRetake() {
-    setPhotoUri(null);
+    setSelectedImageUri(null);
     setRecognizedText("");
     setErrorMessage(null);
-    setStep("camera");
+    setStep("picker");
   }
 
   function handleConfirm() {
@@ -100,25 +147,29 @@ export default function OcrScannerModal({
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={resetAndClose}>
       <View style={styles.container}>
-        {step === "camera" && (
-          <CameraScanStep
-            styles={styles}
-            colors={colors}
-            insets={insets}
-            title={title}
-            cameraRef={cameraRef}
-            permission={permission}
-            requestPermission={requestPermission}
-            isCameraReady={isCameraReady}
-            setIsCameraReady={setIsCameraReady}
-            onCapture={handleCapture}
-            onClose={resetAndClose}
-          />
+        {step === "picker" && (
+          <View style={[styles.centered, { paddingTop: insets.top }]}>
+            <View style={styles.pickerCard}>
+              <Ionicons name="images-outline" size={52} color={colors.primary} />
+              <Text style={styles.permissionTitle}>{title}</Text>
+              <Text style={styles.permissionText}>
+                Escolha uma imagem da galeria ou arquivos do sistema para extrair o texto.
+              </Text>
+              <Pressable style={styles.primaryButton} onPress={handlePickImage}>
+                <Text style={styles.primaryButtonText}>Selecionar arquivo</Text>
+              </Pressable>
+              <Pressable style={styles.linkButton} onPress={resetAndClose}>
+                <Text style={styles.linkButtonText}>Cancelar</Text>
+              </Pressable>
+            </View>
+          </View>
         )}
 
         {step === "processing" && (
           <View style={[styles.centered, { paddingTop: insets.top }]}>
-            {photoUri && <Image source={{ uri: photoUri }} style={styles.previewImageBg} blurRadius={2} />}
+            {selectedImageUri && (
+              <Image source={{ uri: selectedImageUri }} style={styles.previewImageBg} blurRadius={2} />
+            )}
             <View style={styles.processingCard}>
               <ActivityIndicator size="large" color={colors.primary} />
               <Text style={styles.processingText}>Lendo o texto da imagem…</Text>
@@ -131,7 +182,7 @@ export default function OcrScannerModal({
             styles={styles}
             colors={colors}
             insets={insets}
-            photoUri={photoUri}
+            photoUri={selectedImageUri}
             recognizedText={recognizedText}
             setRecognizedText={setRecognizedText}
             errorMessage={errorMessage}
@@ -142,78 +193,6 @@ export default function OcrScannerModal({
         )}
       </View>
     </Modal>
-  );
-}
-
-function CameraScanStep({
-  styles,
-  colors,
-  insets,
-  title,
-  cameraRef,
-  permission,
-  requestPermission,
-  isCameraReady,
-  setIsCameraReady,
-  onCapture,
-  onClose,
-}: any) {
-  if (!permission) {
-    return <View style={styles.centered} />;
-  }
-
-  if (!permission.granted) {
-    return (
-      <View style={[styles.centered, { paddingTop: insets.top }]}>
-        <Ionicons name="camera-outline" size={48} color={colors.textSecondary} />
-        <Text style={styles.permissionTitle}>Precisamos da câmera</Text>
-        <Text style={styles.permissionText}>
-          {permission.canAskAgain
-            ? "Permita o acesso à câmera para escanear o texto."
-            : "O acesso à câmera está bloqueado. Habilite nas configurações do sistema."}
-        </Text>
-        {permission.canAskAgain && (
-          <Pressable style={styles.primaryButton} onPress={requestPermission}>
-            <Text style={styles.primaryButtonText}>Permitir acesso</Text>
-          </Pressable>
-        )}
-        <Pressable style={styles.linkButton} onPress={onClose}>
-          <Text style={styles.linkButtonText}>Cancelar</Text>
-        </Pressable>
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.cameraContainer}>
-      <CameraView
-        ref={cameraRef}
-        style={StyleSheet.absoluteFill}
-        facing="back"
-        onCameraReady={() => setIsCameraReady(true)}
-      />
-
-      <View style={[styles.cameraTopBar, { paddingTop: insets.top + 8 }]}>
-        <Pressable style={styles.iconButton} onPress={onClose} hitSlop={10}>
-          <Ionicons name="close" size={24} color="#FFFFFF" />
-        </Pressable>
-        <Text style={styles.cameraTitle}>{title}</Text>
-        <View style={styles.iconButton} />
-      </View>
-
-      <View style={styles.frameGuide} pointerEvents="none" />
-      <Text style={styles.helperText}>Enquadre o texto e mantenha o aparelho firme</Text>
-
-      <View style={[styles.cameraBottomBar, { paddingBottom: insets.bottom + 24 }]}>
-        <Pressable
-          style={[styles.captureButton, !isCameraReady && styles.captureButtonDisabled]}
-          onPress={onCapture}
-          disabled={!isCameraReady}
-        >
-          <View style={styles.captureButtonInner} />
-        </Pressable>
-      </View>
-    </View>
   );
 }
 
@@ -253,7 +232,7 @@ function ResultStep({
       ) : (
         <>
           <Text style={styles.resultLabel}>
-            Confira e edite o texto se necessário antes de continuar:
+            Confira e edite o texto antes de continuar:
           </Text>
           <TextInput
             style={styles.resultInput}
@@ -268,8 +247,8 @@ function ResultStep({
 
       <View style={styles.resultActions}>
         <Pressable style={[styles.secondaryButton]} onPress={onRetake}>
-          <Ionicons name="camera-reverse-outline" size={18} color={colors.primary} />
-          <Text style={styles.secondaryButtonText}>Tirar novamente</Text>
+          <Ionicons name="images-outline" size={18} color={colors.primary} />
+          <Text style={styles.secondaryButtonText}>Selecionar outra</Text>
         </Pressable>
         <Pressable
           style={[styles.primaryButton, !canConfirm && styles.buttonDisabled]}
@@ -287,7 +266,7 @@ const createStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: "#000000",
+      backgroundColor: colors.background,
     },
     centered: {
       flex: 1,
@@ -296,93 +275,14 @@ const createStyles = (colors: ThemeColors) =>
       paddingHorizontal: 32,
       backgroundColor: colors.background,
     },
-    cameraContainer: {
-      flex: 1,
-      backgroundColor: "#000000",
-    },
-    cameraTopBar: {
-      position: "absolute",
-      top: 0,
-      left: 0,
-      right: 0,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      paddingHorizontal: 16,
-    },
-    cameraTitle: {
-      color: "#FFFFFF",
-      fontSize: 16,
-      fontWeight: "700",
-    },
-    iconButton: {
-      width: 40,
-      height: 40,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    frameGuide: {
-      position: "absolute",
-      top: "30%",
-      left: "8%",
-      right: "8%",
-      height: "26%",
-      borderWidth: 2,
-      borderColor: "rgba(255,255,255,0.85)",
-      borderRadius: 16,
-    },
-    helperText: {
-      position: "absolute",
-      top: "58%",
-      alignSelf: "center",
-      color: "#FFFFFF",
-      fontSize: 13,
-      backgroundColor: "rgba(0,0,0,0.4)",
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 20,
-    },
-    cameraBottomBar: {
-      position: "absolute",
-      bottom: 0,
-      left: 0,
-      right: 0,
-      alignItems: "center",
-    },
-    captureButton: {
-      width: 76,
-      height: 76,
-      borderRadius: 38,
-      borderWidth: 4,
-      borderColor: "#FFFFFF",
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    captureButtonDisabled: {
-      opacity: 0.5,
-    },
-    captureButtonInner: {
-      width: 60,
-      height: 60,
-      borderRadius: 30,
-      backgroundColor: "#FFFFFF",
-    },
-    previewImageBg: {
-      ...StyleSheet.absoluteFill,
-      opacity: 0.5,
-    },
-    processingCard: {
+    pickerCard: {
       backgroundColor: colors.cardBackground,
-      borderRadius: 20,
-      paddingVertical: 28,
-      paddingHorizontal: 32,
+      borderRadius: 24,
+      padding: 28,
+      width: "100%",
       alignItems: "center",
-      gap: 14,
-    },
-    processingText: {
-      color: colors.text,
-      fontSize: 15,
-      fontWeight: "600",
+      borderWidth: 1,
+      borderColor: colors.border,
     },
     permissionTitle: {
       fontSize: 20,
@@ -398,6 +298,25 @@ const createStyles = (colors: ThemeColors) =>
       textAlign: "center",
       lineHeight: 20,
       marginBottom: 24,
+    },
+    previewImageBg: {
+      ...StyleSheet.absoluteFill,
+      opacity: 0.5,
+    },
+    processingCard: {
+      backgroundColor: colors.cardBackground,
+      borderRadius: 20,
+      paddingVertical: 28,
+      paddingHorizontal: 32,
+      alignItems: "center",
+      gap: 14,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    processingText: {
+      color: colors.text,
+      fontSize: 15,
+      fontWeight: "600",
     },
     resultContainer: {
       flex: 1,

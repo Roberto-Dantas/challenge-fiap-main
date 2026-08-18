@@ -59,3 +59,250 @@
 {"_e":"metro:bundling:progress","_t":1786804572068,"id":"1","progress":0.8174641399232853,"total":991,"current":896}
 {"_e":"metro:bundling:progress","_t":1786804572168,"id":"1","progress":0.9486325506833793,"total":1076,"current":1048}
 {"_e":"metro:bundling:done","_t":1786804572237,"id":"1","total":1076,"ms":674.5587}
+{"_e":"root:init","_t":1787009502617,"format":"v0-jsonl","version":"57.0.12"}
+{"_e":"env:mode","_t":1787009502618,"nodeEnv":"development","babelEnv":"development","mode":"development"}
+{"_e":"env:load","_t":1787009502619,"mode":"development","files":[],"env":{}}
+{"_e":"devserver:start","_t":1787009502848,"mode":"development","web":true,"baseUrl":"","asyncRoutes":false,"routerRoot":"../..\\..\\app","serverComponents":false,"serverActions":false,"serverRendering":false,"apiRoutes":false,"exporting":false}
+{"_e":"metro:config","_t":1787009503063,"serverRoot":"../..\\..","projectRoot":"../..\\..","exporting":false,"flags":{"autolinkingModuleResolution":false,"serverActions":false,"serverComponents":false,"reactCompiler":false,"optimizeGraph":false,"treeshaking":false,"logbox":false}}
+{"_e":"expo:dev-tools-plugin:load","_t":1787009503188,"plugins":[]}
+{"_e":"metro:instantiate","_t":1787009506096,"atlas":false,"workers":15,"host":"::","port":8081}
+{"_e":"metro:bundling:started","_t":1787009516997,"id":"1","platform":"web","environment":null,"entry":"index.ts"}
+{"_e":"metro:bundling:progress","_t":1787009516997,"id":"1","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1787009517000,"id":"1","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1787009517465,"id":"1","progress":0.010000000000000002,"total":1,"current":1}
+{"_e":"metro:bundling:progress","_t":1787009517571,"id":"1","progress":0.04000000000000001,"total":9,"current":2}
+{"_e":"metro:bundling:progress","_t":1787009517688,"id":"1","progress":0.18367346938775508,"total":21,"current":9}
+{"_e":"metro:bundling:progress","_t":1787009518159,"id":"1","progress":0.22675736961451246,"total":21,"current":10}
+{"_e":"metro:bundling:progress","_t":1787009518263,"id":"1","progress":0.22675736961451246,"total":74,"current":28}
+{"_e":"metro:bundling:progress","_t":1787009518371,"id":"1","progress":0.2544443574281463,"total":113,"current":57}
+{"_e":"metro:bundling:progress","_t":1787009518471,"id":"1","progress":0.41652834364468594,"total":141,"current":91}
+{"_e":"metro:bundling:progress","_t":1787009518576,"id":"1","progress":0.41652834364468594,"total":219,"current":120}
+{"_e":"metro:bundling:progress","_t":1787009518676,"id":"1","progress":0.41652834364468594,"total":284,"current":148}
+{"_e":"metro:bundling:progress","_t":1787009518776,"id":"1","progress":0.41652834364468594,"total":322,"current":190}
+{"_e":"metro:bundling:progress","_t":1787009518880,"id":"1","progress":0.41652834364468594,"total":398,"current":236}
+{"_e":"metro:bundling:progress","_t":1787009518981,"id":"1","progress":0.45618901692289293,"total":419,"current":283}
+{"_e":"metro:bundling:progress","_t":1787009519082,"id":"1","progress":0.5876608245317303,"total":437,"current":335}
+{"_e":"metro:bundling:progress","_t":1787009519183,"id":"1","progress":0.7275086505190311,"total":476,"current":406}
+{"_e":"metro:bundling:progress","_t":1787009519283,"id":"1","progress":0.7703784103419972,"total":507,"current":445}
+{"_e":"metro:bundling:progress","_t":1787009519384,"id":"1","progress":0.7717704603022097,"total":535,"current":470}
+{"_e":"metro:bundling:progress","_t":1787009519484,"id":"1","progress":0.8500578441728284,"total":564,"current":520}
+{"_e":"metro:bundling:progress","_t":1787009519585,"id":"1","progress":0.8717461474385673,"total":588,"current":549}
+{"_e":"metro:bundling:progress","_t":1787009519685,"id":"1","progress":0.9121323065269537,"total":623,"current":595}
+{"_e":"metro:bundling:progress","_t":1787009519786,"id":"1","progress":0.9664913485338638,"total":651,"current":640}
+{"_e":"metro:bundling:progress","_t":1787009519885,"id":"1","progress":0.9970652987206772,"total":681,"current":680}
+{"_e":"metro:bundling:progress","_t":1787009519987,"id":"1","progress":0.9970866730698943,"total":686,"current":685}
+{"_e":"metro:bundling:progress","_t":1787009521072,"id":"1","progress":0.999,"total":686,"current":686}
+{"_e":"metro:bundling:progress","_t":1787009521174,"id":"1","progress":0.999,"total":688,"current":688}
+{"_e":"metro:bundling:done","_t":1787009521305,"id":"1","total":688,"ms":4307.8046}
+{"_e":"metro:client_log","_t":1787009521435,"level":"info","data":["%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools","font-weight:bold"]}
+{"_e":"metro:client_log","_t":1787009521435,"level":"warn","data":["\"shadow*\" style props are deprecated. Use \"boxShadow\"."]}
+{"_e":"metro:client_log","_t":1787009521435,"level":"log","data":["Running application \"main\" with appParams:\n","{\"hydrate\": undefined, \"rootTag\": \"#root\"}","\nDevelopment-level warnings: ON.\nPerformance optimizations: OFF."]}
+{"_e":"metro:client_log","_t":1787009534673,"level":"warn","data":["props.pointerEvents is deprecated. Use style.pointerEvents"]}
+{"_e":"metro:client_log","_t":1787009840395,"level":"warn","data":["[expo-image-picker] `ImagePicker.MediaTypeOptions` have been deprecated. Use `ImagePicker.MediaType` or an array of `ImagePicker.MediaType` instead."]}
+{"_e":"metro:client_log","_t":1787009886739,"level":"warn","data":["[expo-image-picker] `ImagePicker.MediaTypeOptions` have been deprecated. Use `ImagePicker.MediaType` or an array of `ImagePicker.MediaType` instead."]}
+{"_e":"metro:client_log","_t":1787009952852,"level":"warn","data":["[expo-image-picker] `ImagePicker.MediaTypeOptions` have been deprecated. Use `ImagePicker.MediaType` or an array of `ImagePicker.MediaType` instead."]}
+{"_e":"metro:client_log","_t":1787009999422,"level":"warn","data":["[expo-image-picker] `ImagePicker.MediaTypeOptions` have been deprecated. Use `ImagePicker.MediaType` or an array of `ImagePicker.MediaType` instead."]}
+{"_e":"metro:bundling:started","_t":1787010006763,"id":"6","platform":"web","environment":null,"entry":"index.ts"}
+{"_e":"metro:bundling:progress","_t":1787010006763,"id":"6","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1787010006780,"id":"6","total":1,"ms":16.3142}
+{"_e":"metro:client_log","_t":1787010006967,"level":"info","data":["%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools","font-weight:bold"]}
+{"_e":"metro:client_log","_t":1787010006968,"level":"warn","data":["\"shadow*\" style props are deprecated. Use \"boxShadow\"."]}
+{"_e":"metro:client_log","_t":1787010006968,"level":"log","data":["Running application \"main\" with appParams:\n","{\"hydrate\": undefined, \"rootTag\": \"#root\"}","\nDevelopment-level warnings: ON.\nPerformance optimizations: OFF."]}
+{"_e":"metro:client_log","_t":1787010008194,"level":"warn","data":["props.pointerEvents is deprecated. Use style.pointerEvents"]}
+{"_e":"metro:client_log","_t":1787010010126,"level":"warn","data":["[expo-image-picker] `ImagePicker.MediaTypeOptions` have been deprecated. Use `ImagePicker.MediaType` or an array of `ImagePicker.MediaType` instead."]}
+{"_e":"metro:bundling:started","_t":1787010220274,"id":"a","platform":"web","environment":null,"entry":"index.ts"}
+{"_e":"metro:bundling:progress","_t":1787010220274,"id":"a","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1787010220288,"id":"a","total":1,"ms":13.9521}
+{"_e":"metro:client_log","_t":1787010220396,"level":"info","data":["%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools","font-weight:bold"]}
+{"_e":"metro:client_log","_t":1787010220396,"level":"warn","data":["\"shadow*\" style props are deprecated. Use \"boxShadow\"."]}
+{"_e":"metro:client_log","_t":1787010220396,"level":"log","data":["Running application \"main\" with appParams:\n","{\"hydrate\": undefined, \"rootTag\": \"#root\"}","\nDevelopment-level warnings: ON.\nPerformance optimizations: OFF."]}
+{"_e":"metro:client_log","_t":1787010221615,"level":"warn","data":["props.pointerEvents is deprecated. Use style.pointerEvents"]}
+{"_e":"metro:client_log","_t":1787010224898,"level":"warn","data":["[expo-image-picker] `ImagePicker.MediaTypeOptions` have been deprecated. Use `ImagePicker.MediaType` or an array of `ImagePicker.MediaType` instead."]}
+{"_e":"metro:bundling:started","_t":1787010226304,"id":"e","platform":"web","environment":null,"entry":"node_modules\\expo-mlkit-ocr\\build\\index.js"}
+{"_e":"metro:bundling:progress","_t":1787010226304,"id":"e","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1787010226306,"id":"e","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1787010226397,"id":"e","total":1,"ms":93.0303}
+{"_e":"metro:client_log","_t":1787010226423,"level":"warn","data":["ML Kit falhou no fallback; usando modo demonstração.","[TypeError: ExpoMlkitOcrModule.default.isSupported is not a function]"]}
+{"_e":"metro:bundling:started","_t":1787010654532,"id":"f","platform":"web","environment":null,"entry":"index.ts"}
+{"_e":"metro:bundling:progress","_t":1787010654533,"id":"f","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1787010654546,"id":"f","total":1,"ms":14.092}
+{"_e":"metro:client_log","_t":1787010654724,"level":"info","data":["%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools","font-weight:bold"]}
+{"_e":"metro:client_log","_t":1787010654724,"level":"warn","data":["\"shadow*\" style props are deprecated. Use \"boxShadow\"."]}
+{"_e":"metro:client_log","_t":1787010654724,"level":"log","data":["Running application \"main\" with appParams:\n","{\"hydrate\": undefined, \"rootTag\": \"#root\"}","\nDevelopment-level warnings: ON.\nPerformance optimizations: OFF."]}
+{"_e":"metro:client_log","_t":1787010656440,"level":"warn","data":["props.pointerEvents is deprecated. Use style.pointerEvents"]}
+{"_e":"metro:client_log","_t":1787010667174,"level":"warn","data":["[expo-image-picker] `ImagePicker.MediaTypeOptions` have been deprecated. Use `ImagePicker.MediaType` or an array of `ImagePicker.MediaType` instead."]}
+{"_e":"metro:bundling:started","_t":1787010669640,"id":"j","platform":"web","environment":null,"entry":"node_modules\\expo-mlkit-ocr\\build\\index.js"}
+{"_e":"metro:bundling:progress","_t":1787010669640,"id":"j","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1787010669651,"id":"j","total":1,"ms":11.2808}
+{"_e":"metro:client_log","_t":1787010669680,"level":"warn","data":["ML Kit falhou no fallback; usando modo demonstração.","[TypeError: ExpoMlkitOcrModule.default.isSupported is not a function]"]}
+{"_e":"metro:bundling:started","_t":1787010873753,"id":"k","platform":"web","environment":null,"entry":"index.ts"}
+{"_e":"metro:bundling:progress","_t":1787010873753,"id":"k","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1787010873767,"id":"k","total":1,"ms":14.3368}
+{"_e":"metro:client_log","_t":1787010873878,"level":"info","data":["%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools","font-weight:bold"]}
+{"_e":"metro:client_log","_t":1787010873878,"level":"warn","data":["\"shadow*\" style props are deprecated. Use \"boxShadow\"."]}
+{"_e":"metro:client_log","_t":1787010873878,"level":"log","data":["Running application \"main\" with appParams:\n","{\"hydrate\": undefined, \"rootTag\": \"#root\"}","\nDevelopment-level warnings: ON.\nPerformance optimizations: OFF."]}
+{"_e":"metro:client_log","_t":1787010875424,"level":"warn","data":["props.pointerEvents is deprecated. Use style.pointerEvents"]}
+{"_e":"root:init","_t":1787011007242,"format":"v0-jsonl","version":"57.0.12"}
+{"_e":"env:mode","_t":1787011007243,"nodeEnv":"development","babelEnv":"development","mode":"development"}
+{"_e":"env:load","_t":1787011007244,"mode":"development","files":[],"env":{}}
+{"_e":"devserver:start","_t":1787011007450,"mode":"development","web":true,"baseUrl":"","asyncRoutes":false,"routerRoot":"../..\\..\\app","serverComponents":false,"serverActions":false,"serverRendering":false,"apiRoutes":false,"exporting":false}
+{"_e":"metro:config","_t":1787011007646,"serverRoot":"../..\\..","projectRoot":"../..\\..","exporting":false,"flags":{"autolinkingModuleResolution":false,"serverActions":false,"serverComponents":false,"reactCompiler":false,"optimizeGraph":false,"treeshaking":false,"logbox":false}}
+{"_e":"expo:dev-tools-plugin:load","_t":1787011007758,"plugins":[]}
+{"_e":"metro:instantiate","_t":1787011010655,"atlas":false,"workers":15,"host":"::","port":8081}
+{"_e":"metro:bundling:started","_t":1787011077100,"id":"1","platform":"web","environment":null,"entry":"index.ts"}
+{"_e":"metro:bundling:progress","_t":1787011077101,"id":"1","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1787011077105,"id":"1","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1787011077206,"id":"1","progress":0.1794753573248562,"total":203,"current":86}
+{"_e":"metro:bundling:progress","_t":1787011077305,"id":"1","progress":0.2767198350694444,"total":384,"current":202}
+{"_e":"metro:bundling:progress","_t":1787011077405,"id":"1","progress":0.6950220650844351,"total":481,"current":401}
+{"_e":"metro:bundling:progress","_t":1787011077505,"id":"1","progress":0.7371126211911357,"total":608,"current":522}
+{"_e":"metro:bundling:progress","_t":1787011077605,"id":"1","progress":0.9941089966150659,"total":678,"current":676}
+{"_e":"metro:bundling:done","_t":1787011077656,"id":"1","total":678,"ms":555.8012}
+{"_e":"metro:client_log","_t":1787011077815,"level":"info","data":["%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools","font-weight:bold"]}
+{"_e":"metro:client_log","_t":1787011077815,"level":"warn","data":["\"shadow*\" style props are deprecated. Use \"boxShadow\"."]}
+{"_e":"metro:client_log","_t":1787011077815,"level":"log","data":["Running application \"main\" with appParams:\n","{\"hydrate\": undefined, \"rootTag\": \"#root\"}","\nDevelopment-level warnings: ON.\nPerformance optimizations: OFF."]}
+{"_e":"metro:client_log","_t":1787011079022,"level":"warn","data":["props.pointerEvents is deprecated. Use style.pointerEvents"]}
+{"_e":"metro:bundling:started","_t":1787011081039,"id":"5","platform":"web","environment":null,"entry":"index.ts"}
+{"_e":"metro:bundling:progress","_t":1787011081039,"id":"5","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1787011081040,"id":"5","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1787011081140,"id":"5","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1787011081240,"id":"5","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1787011081368,"id":"5","total":1,"ms":329.4292}
+{"_e":"metro:client_log","_t":1787011081492,"level":"info","data":["%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools","font-weight:bold"]}
+{"_e":"metro:client_log","_t":1787011081493,"level":"warn","data":["\"shadow*\" style props are deprecated. Use \"boxShadow\"."]}
+{"_e":"metro:client_log","_t":1787011081493,"level":"log","data":["Running application \"main\" with appParams:\n","{\"hydrate\": undefined, \"rootTag\": \"#root\"}","\nDevelopment-level warnings: ON.\nPerformance optimizations: OFF."]}
+{"_e":"metro:client_log","_t":1787011082724,"level":"warn","data":["props.pointerEvents is deprecated. Use style.pointerEvents"]}
+{"_e":"metro:client_log","_t":1787011086431,"level":"warn","data":["[expo-image-picker] `ImagePicker.MediaTypeOptions` have been deprecated. Use `ImagePicker.MediaType` or an array of `ImagePicker.MediaType` instead."]}
+{"_e":"metro:bundling:started","_t":1787011089690,"id":"9","platform":"web","environment":null,"entry":"node_modules\\expo-mlkit-ocr\\build\\index.js"}
+{"_e":"metro:bundling:progress","_t":1787011089690,"id":"9","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1787011089691,"id":"9","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1787011089792,"id":"9","progress":0.999,"total":214,"current":214}
+{"_e":"metro:bundling:done","_t":1787011089806,"id":"9","total":214,"ms":115.602}
+{"_e":"metro:client_log","_t":1787011089878,"level":"error","data":["[OCR] ML Kit falhou no fallback; usando modo demonstração.","[TypeError: ExpoMlkitOcrModule.default.isSupported is not a function]","\n\n\u001b[1mCode: ocrService.ts\u001b[22m\n\u001b[0m \u001b[90m 124 |\u001b[39m     \u001b[36mconst\u001b[39m mlkit \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mimport\u001b[39m(\u001b[32m\"expo-mlkit-ocr\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 125 |\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 126 |\u001b[39m     \u001b[36mif\u001b[39m (\u001b[36mtypeof\u001b[39m mlkit\u001b[33m.\u001b[39misSupported \u001b[33m===\u001b[39m \u001b[32m\"function\"\u001b[39m \u001b[33m&&\u001b[39m \u001b[33m!\u001b[39mmlkit\u001b[33m.\u001b[39misSupported()) {\n \u001b[90m     |\u001b[39m                                                           \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 127 |\u001b[39m       \u001b[36mthrow\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mError\u001b[39m(\n \u001b[90m 128 |\u001b[39m         \u001b[32m\"Este dispositivo não é suportado pelo ML Kit de OCR.\"\u001b[39m\u001b[33m,\u001b[39m\n \u001b[90m 129 |\u001b[39m       )\u001b[33m;\u001b[39m\u001b[0m\n\u001b[1mCall Stack\u001b[22m\n\u001b[90m  recognizeWithMlKit (src\\services\\ocrService.ts:126:59)\u001b[39m\n\u001b[90m  recognizeWithAutoMode (src\\services\\ocrService.ts:96:12)\u001b[39m\n\u001b[90m  handlePickImage (src\\components\\OcrScannerModal.tsx:82:26)\u001b[39m"]}
+{"_e":"metro:bundling:started","_t":1787011289062,"id":"b","platform":"web","environment":null,"entry":"index.ts"}
+{"_e":"metro:bundling:progress","_t":1787011289062,"id":"b","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1787011289063,"id":"b","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1787011289090,"id":"b","total":1,"ms":27.7303}
+{"_e":"metro:client_log","_t":1787011289197,"level":"info","data":["%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools","font-weight:bold"]}
+{"_e":"metro:client_log","_t":1787011289197,"level":"warn","data":["\"shadow*\" style props are deprecated. Use \"boxShadow\"."]}
+{"_e":"metro:client_log","_t":1787011289197,"level":"log","data":["Running application \"main\" with appParams:\n","{\"hydrate\": undefined, \"rootTag\": \"#root\"}","\nDevelopment-level warnings: ON.\nPerformance optimizations: OFF."]}
+{"_e":"metro:client_log","_t":1787011290415,"level":"warn","data":["props.pointerEvents is deprecated. Use style.pointerEvents"]}
+{"_e":"metro:client_log","_t":1787011292790,"level":"warn","data":["[expo-image-picker] `ImagePicker.MediaTypeOptions` have been deprecated. Use `ImagePicker.MediaType` or an array of `ImagePicker.MediaType` instead."]}
+{"_e":"metro:client_log","_t":1787011295557,"level":"warn","data":["[OCR] Sem rede. Usando modo demonstração."]}
+{"_e":"metro:bundling:started","_t":1787011841091,"id":"f","platform":"web","environment":null,"entry":"index.ts"}
+{"_e":"metro:bundling:progress","_t":1787011841091,"id":"f","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1787011841104,"id":"f","total":1,"ms":13.7194}
+{"_e":"metro:client_log","_t":1787011841217,"level":"info","data":["%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools","font-weight:bold"]}
+{"_e":"metro:client_log","_t":1787011841217,"level":"warn","data":["\"shadow*\" style props are deprecated. Use \"boxShadow\"."]}
+{"_e":"metro:client_log","_t":1787011841217,"level":"log","data":["Running application \"main\" with appParams:\n","{\"hydrate\": undefined, \"rootTag\": \"#root\"}","\nDevelopment-level warnings: ON.\nPerformance optimizations: OFF."]}
+{"_e":"metro:bundling:started","_t":1787011842935,"id":"h","platform":"web","environment":null,"entry":"index.ts"}
+{"_e":"metro:bundling:progress","_t":1787011842935,"id":"h","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1787011842948,"id":"h","total":1,"ms":13.6212}
+{"_e":"metro:client_log","_t":1787011843055,"level":"info","data":["%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools","font-weight:bold"]}
+{"_e":"metro:client_log","_t":1787011843055,"level":"warn","data":["\"shadow*\" style props are deprecated. Use \"boxShadow\"."]}
+{"_e":"metro:client_log","_t":1787011843055,"level":"log","data":["Running application \"main\" with appParams:\n","{\"hydrate\": undefined, \"rootTag\": \"#root\"}","\nDevelopment-level warnings: ON.\nPerformance optimizations: OFF."]}
+{"_e":"metro:client_log","_t":1787011843431,"level":"warn","data":["props.pointerEvents is deprecated. Use style.pointerEvents"]}
+{"_e":"metro:client_log","_t":1787011844282,"level":"warn","data":["props.pointerEvents is deprecated. Use style.pointerEvents"]}
+{"_e":"metro:client_log","_t":1787011846143,"level":"warn","data":["[expo-image-picker] `ImagePicker.MediaTypeOptions` have been deprecated. Use `ImagePicker.MediaType` or an array of `ImagePicker.MediaType` instead."]}
+{"_e":"metro:client_log","_t":1787011848727,"level":"warn","data":["[OCR] Sem rede. Usando modo demonstração."]}
+{"_e":"root:init","_t":1787012213931,"format":"v0-jsonl","version":"57.0.12"}
+{"_e":"env:mode","_t":1787012213931,"nodeEnv":"development","babelEnv":"development","mode":"development"}
+{"_e":"env:load","_t":1787012213933,"mode":"development","files":[],"env":{}}
+{"_e":"devserver:start","_t":1787012214135,"mode":"development","web":true,"baseUrl":"","asyncRoutes":false,"routerRoot":"../..\\..\\app","serverComponents":false,"serverActions":false,"serverRendering":false,"apiRoutes":false,"exporting":false}
+{"_e":"metro:config","_t":1787012214317,"serverRoot":"../..\\..","projectRoot":"../..\\..","exporting":false,"flags":{"autolinkingModuleResolution":false,"serverActions":false,"serverComponents":false,"reactCompiler":false,"optimizeGraph":false,"treeshaking":false,"logbox":false}}
+{"_e":"expo:dev-tools-plugin:load","_t":1787012214426,"plugins":[]}
+{"_e":"metro:instantiate","_t":1787012217259,"atlas":false,"workers":15,"host":"::","port":8081}
+{"_e":"metro:bundling:started","_t":1787012228047,"id":"1","platform":"web","environment":null,"entry":"index.ts"}
+{"_e":"metro:bundling:progress","_t":1787012228047,"id":"1","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1787012228049,"id":"1","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1787012228148,"id":"1","progress":0.28027681660899656,"total":391,"current":207}
+{"_e":"metro:bundling:progress","_t":1787012228248,"id":"1","progress":0.8584348110116466,"total":626,"current":580}
+{"_e":"metro:bundling:done","_t":1787012228306,"id":"1","total":626,"ms":259.2454}
+{"_e":"metro:client_log","_t":1787012228411,"level":"info","data":["%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools","font-weight:bold"]}
+{"_e":"metro:client_log","_t":1787012228411,"level":"warn","data":["\"shadow*\" style props are deprecated. Use \"boxShadow\"."]}
+{"_e":"metro:client_log","_t":1787012228411,"level":"log","data":["Running application \"main\" with appParams:\n","{\"hydrate\": undefined, \"rootTag\": \"#root\"}","\nDevelopment-level warnings: ON.\nPerformance optimizations: OFF."]}
+{"_e":"metro:client_log","_t":1787012229630,"level":"warn","data":["props.pointerEvents is deprecated. Use style.pointerEvents"]}
+{"_e":"metro:client_log","_t":1787012231876,"level":"warn","data":["[expo-image-picker] `ImagePicker.MediaTypeOptions` have been deprecated. Use `ImagePicker.MediaType` or an array of `ImagePicker.MediaType` instead."]}
+{"_e":"metro:client_log","_t":1787012234378,"level":"warn","data":["[OCR] Sem rede. Usando modo demonstração."]}
+{"_e":"metro:bundling:started","_t":1787012476511,"id":"4","platform":"web","environment":null,"entry":"index.ts"}
+{"_e":"metro:bundling:progress","_t":1787012476511,"id":"4","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1787012476525,"id":"4","total":1,"ms":13.8716}
+{"_e":"metro:client_log","_t":1787012476630,"level":"info","data":["%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools","font-weight:bold"]}
+{"_e":"metro:client_log","_t":1787012476631,"level":"warn","data":["\"shadow*\" style props are deprecated. Use \"boxShadow\"."]}
+{"_e":"metro:client_log","_t":1787012476631,"level":"log","data":["Running application \"main\" with appParams:\n","{\"hydrate\": undefined, \"rootTag\": \"#root\"}","\nDevelopment-level warnings: ON.\nPerformance optimizations: OFF."]}
+{"_e":"metro:client_log","_t":1787012477879,"level":"warn","data":["props.pointerEvents is deprecated. Use style.pointerEvents"]}
+{"_e":"metro:client_log","_t":1787012479482,"level":"warn","data":["[expo-image-picker] `ImagePicker.MediaTypeOptions` have been deprecated. Use `ImagePicker.MediaType` or an array of `ImagePicker.MediaType` instead."]}
+{"_e":"metro:client_log","_t":1787012481971,"level":"warn","data":["[OCR] Sem rede. Usando modo demonstração."]}
+{"_e":"metro:bundling:started","_t":1787012495027,"id":"9","platform":"web","environment":null,"entry":"index.ts"}
+{"_e":"metro:bundling:started","_t":1787012509261,"id":"a","platform":"web","environment":null,"entry":"index.ts"}
+{"_e":"metro:bundling:progress","_t":1787012509261,"id":"a","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1787012509289,"id":"a","total":1,"ms":27.8485}
+{"_e":"metro:bundling:started","_t":1787012509393,"id":"c","platform":"web","environment":null,"entry":"index.ts"}
+{"_e":"metro:client_log","_t":1787012509537,"level":"info","data":["%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools","font-weight:bold"]}
+{"_e":"metro:client_log","_t":1787012509537,"level":"warn","data":["\"shadow*\" style props are deprecated. Use \"boxShadow\"."]}
+{"_e":"metro:client_log","_t":1787012509537,"level":"log","data":["Running application \"main\" with appParams:\n","{\"hydrate\": undefined, \"rootTag\": \"#root\"}","\nDevelopment-level warnings: ON.\nPerformance optimizations: OFF."]}
+{"_e":"metro:client_log","_t":1787012510676,"level":"warn","data":["props.pointerEvents is deprecated. Use style.pointerEvents"]}
+{"_e":"metro:client_log","_t":1787012512547,"level":"warn","data":["[expo-image-picker] `ImagePicker.MediaTypeOptions` have been deprecated. Use `ImagePicker.MediaType` or an array of `ImagePicker.MediaType` instead."]}
+{"_e":"metro:client_log","_t":1787012515431,"level":"warn","data":["[OCR] Sem rede. Usando modo demonstração."]}
+{"_e":"metro:bundling:started","_t":1787012653477,"id":"f","platform":"web","environment":null,"entry":"src\\services\\ocrService.ts"}
+{"_e":"metro:bundling:started","_t":1787012704285,"id":"g","platform":"web","environment":null,"entry":"index.ts"}
+{"_e":"metro:bundling:progress","_t":1787012704285,"id":"g","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1787012704307,"id":"g","total":1,"ms":21.7876}
+{"_e":"metro:bundling:started","_t":1787012704412,"id":"i","platform":"web","environment":null,"entry":"index.ts"}
+{"_e":"metro:client_log","_t":1787012704464,"level":"info","data":["%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools","font-weight:bold"]}
+{"_e":"metro:client_log","_t":1787012704464,"level":"warn","data":["\"shadow*\" style props are deprecated. Use \"boxShadow\"."]}
+{"_e":"metro:client_log","_t":1787012704464,"level":"log","data":["Running application \"main\" with appParams:\n","{\"hydrate\": undefined, \"rootTag\": \"#root\"}","\nDevelopment-level warnings: ON.\nPerformance optimizations: OFF."]}
+{"_e":"metro:client_log","_t":1787012705700,"level":"warn","data":["props.pointerEvents is deprecated. Use style.pointerEvents"]}
+{"_e":"metro:client_log","_t":1787012709070,"level":"warn","data":["[expo-image-picker] `ImagePicker.MediaTypeOptions` have been deprecated. Use `ImagePicker.MediaType` or an array of `ImagePicker.MediaType` instead."]}
+{"_e":"metro:client_log","_t":1787012710464,"level":"log","data":["[OCR] Enviando imagem para OCR.Space:","{\"apiKeyPrefix\": \"K84712\", \"length\": 100264, \"mimeType\": \"base64-raw\"}"]}
+{"_e":"metro:client_log","_t":1787012711920,"level":"error","data":["[OCR] OCR.Space respondeu com erro:","{\"responseBody\": \"{\\\"error\\\":\\\"E501: Not an image or PDF\\\",\\\"details\\\":\\\"Invalid base64 Data URI.\\\"}\", \"status\": 400, \"statusText\": \"\"}","\n\n\u001b[1mCode: ocrService.ts\u001b[22m\n\u001b[0m \u001b[90m 112 |\u001b[39m\n \u001b[90m 113 |\u001b[39m     \u001b[36mif\u001b[39m (\u001b[33m!\u001b[39mresponse\u001b[33m.\u001b[39mok) {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 114 |\u001b[39m       console\u001b[33m.\u001b[39merror(\u001b[32m\"[OCR] OCR.Space respondeu com erro:\"\u001b[39m\u001b[33m,\u001b[39m {\n \u001b[90m     |\u001b[39m               \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 115 |\u001b[39m         status\u001b[33m:\u001b[39m response\u001b[33m.\u001b[39mstatus\u001b[33m,\u001b[39m\n \u001b[90m 116 |\u001b[39m         statusText\u001b[33m:\u001b[39m response\u001b[33m.\u001b[39mstatusText\u001b[33m,\u001b[39m\n \u001b[90m 117 |\u001b[39m         responseBody\u001b[33m:\u001b[39m rawText\u001b[33m,\u001b[39m\u001b[0m\n\u001b[1mCall Stack\u001b[22m\n\u001b[90m  recognizeWithOcrSpace (src\\services\\ocrService.ts:114:15)\u001b[39m\n\u001b[90m  recognizeWithAutoMode (src\\services\\ocrService.ts:58:12)\u001b[39m\n\u001b[90m  handlePickImage (src\\components\\OcrScannerModal.tsx:82:26)\u001b[39m"]}
+{"_e":"metro:client_log","_t":1787012711920,"level":"error","data":["[OCR] Erro ao chamar OCR.Space.","[Error: Falha na requisição de OCR (400)]","\n\n\u001b[1mCode: ocrService.ts\u001b[22m\n\u001b[0m \u001b[90m 117 |\u001b[39m         responseBody\u001b[33m:\u001b[39m rawText\u001b[33m,\u001b[39m\n \u001b[90m 118 |\u001b[39m       })\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 119 |\u001b[39m       \u001b[36mthrow\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mError\u001b[39m(\u001b[32m`Falha na requisição de OCR (${response.status})`\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m             \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 120 |\u001b[39m     }\n \u001b[90m 121 |\u001b[39m\n \u001b[90m 122 |\u001b[39m     \u001b[36mconst\u001b[39m text\u001b[33m:\u001b[39m string \u001b[33m=\u001b[39m data\u001b[33m?\u001b[39m\u001b[33m.\u001b[39m\u001b[33mParsedResults\u001b[39m\u001b[33m?\u001b[39m\u001b[33m.\u001b[39m[\u001b[35m0\u001b[39m]\u001b[33m?\u001b[39m\u001b[33m.\u001b[39m\u001b[33mParsedText\u001b[39m \u001b[33m?\u001b[39m\u001b[33m?\u001b[39m \u001b[32m\"\"\u001b[39m\u001b[33m;\u001b[39m\u001b[0m\n\u001b[1mCall Stack\u001b[22m\n\u001b[90m  recognizeWithOcrSpace (src\\services\\ocrService.ts:119:13)\u001b[39m\n\u001b[90m  recognizeWithAutoMode (src\\services\\ocrService.ts:58:12)\u001b[39m\n\u001b[90m  handlePickImage (src\\components\\OcrScannerModal.tsx:82:26)\u001b[39m"]}
+{"_e":"metro:client_log","_t":1787012711921,"level":"error","data":["[OCR] OCR.Space falhou. Usando modo demonstração.","[Error: Falha na requisição de OCR (400)]","\n\n\u001b[1mCode: ocrService.ts\u001b[22m\n\u001b[0m \u001b[90m 117 |\u001b[39m         responseBody\u001b[33m:\u001b[39m rawText\u001b[33m,\u001b[39m\n \u001b[90m 118 |\u001b[39m       })\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 119 |\u001b[39m       \u001b[36mthrow\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mError\u001b[39m(\u001b[32m`Falha na requisição de OCR (${response.status})`\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m             \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 120 |\u001b[39m     }\n \u001b[90m 121 |\u001b[39m\n \u001b[90m 122 |\u001b[39m     \u001b[36mconst\u001b[39m text\u001b[33m:\u001b[39m string \u001b[33m=\u001b[39m data\u001b[33m?\u001b[39m\u001b[33m.\u001b[39m\u001b[33mParsedResults\u001b[39m\u001b[33m?\u001b[39m\u001b[33m.\u001b[39m[\u001b[35m0\u001b[39m]\u001b[33m?\u001b[39m\u001b[33m.\u001b[39m\u001b[33mParsedText\u001b[39m \u001b[33m?\u001b[39m\u001b[33m?\u001b[39m \u001b[32m\"\"\u001b[39m\u001b[33m;\u001b[39m\u001b[0m\n\u001b[1mCall Stack\u001b[22m\n\u001b[90m  recognizeWithOcrSpace (src\\services\\ocrService.ts:119:13)\u001b[39m\n\u001b[90m  recognizeWithAutoMode (src\\services\\ocrService.ts:58:12)\u001b[39m\n\u001b[90m  handlePickImage (src\\components\\OcrScannerModal.tsx:82:26)\u001b[39m"]}
+{"_e":"metro:bundling:started","_t":1787012753005,"id":"o","platform":"web","environment":null,"entry":"src\\services\\ocrService.ts"}
+{"_e":"metro:bundling:started","_t":1787012770502,"id":"p","platform":"web","environment":null,"entry":"index.ts"}
+{"_e":"metro:bundling:progress","_t":1787012770502,"id":"p","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1787012770524,"id":"p","total":1,"ms":21.7613}
+{"_e":"metro:bundling:started","_t":1787012770637,"id":"r","platform":"web","environment":null,"entry":"index.ts"}
+{"_e":"metro:client_log","_t":1787012770688,"level":"info","data":["%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools","font-weight:bold"]}
+{"_e":"metro:client_log","_t":1787012770688,"level":"warn","data":["\"shadow*\" style props are deprecated. Use \"boxShadow\"."]}
+{"_e":"metro:client_log","_t":1787012770688,"level":"log","data":["Running application \"main\" with appParams:\n","{\"hydrate\": undefined, \"rootTag\": \"#root\"}","\nDevelopment-level warnings: ON.\nPerformance optimizations: OFF."]}
+{"_e":"metro:client_log","_t":1787012771920,"level":"warn","data":["props.pointerEvents is deprecated. Use style.pointerEvents"]}
+{"_e":"metro:client_log","_t":1787012778222,"level":"warn","data":["[expo-image-picker] `ImagePicker.MediaTypeOptions` have been deprecated. Use `ImagePicker.MediaType` or an array of `ImagePicker.MediaType` instead."]}
+{"_e":"metro:client_log","_t":1787012779937,"level":"log","data":["[OCR] Enviando imagem para OCR.Space:","{\"apiKeyPrefix\": \"K84712\", \"firstChars\": \"iVBORw0KGgoAAAAN\", \"length\": 100264}"]}
+{"_e":"metro:client_log","_t":1787012780362,"level":"error","data":["[OCR] OCR.Space respondeu com erro:","{\"responseBody\": \"{\\\"error\\\":\\\"E501: Not an image or PDF\\\",\\\"details\\\":\\\"Invalid base64 Data URI.\\\"}\", \"status\": 400, \"statusText\": \"\"}","\n\n\u001b[1mCode: ocrService.ts\u001b[22m\n\u001b[0m \u001b[90m 143 |\u001b[39m\n \u001b[90m 144 |\u001b[39m     \u001b[36mif\u001b[39m (\u001b[33m!\u001b[39mresponse\u001b[33m.\u001b[39mok) {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 145 |\u001b[39m       console\u001b[33m.\u001b[39merror(\u001b[32m\"[OCR] OCR.Space respondeu com erro:\"\u001b[39m\u001b[33m,\u001b[39m {\n \u001b[90m     |\u001b[39m               \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 146 |\u001b[39m         status\u001b[33m:\u001b[39m response\u001b[33m.\u001b[39mstatus\u001b[33m,\u001b[39m\n \u001b[90m 147 |\u001b[39m         statusText\u001b[33m:\u001b[39m response\u001b[33m.\u001b[39mstatusText\u001b[33m,\u001b[39m\n \u001b[90m 148 |\u001b[39m         responseBody\u001b[33m:\u001b[39m rawText\u001b[33m,\u001b[39m\u001b[0m\n\u001b[1mCall Stack\u001b[22m\n\u001b[90m  recognizeWithOcrSpace (src\\services\\ocrService.ts:145:15)\u001b[39m\n\u001b[90m  recognizeWithAutoMode (src\\services\\ocrService.ts:93:12)\u001b[39m\n\u001b[90m  handlePickImage (src\\components\\OcrScannerModal.tsx:82:26)\u001b[39m"]}
+{"_e":"metro:client_log","_t":1787012780372,"level":"error","data":["[OCR] OCR.Space falhou. Usando modo demonstração.","[Error: Falha na requisição de OCR (400)]","\n\n\u001b[1mCode: ocrService.ts\u001b[22m\n\u001b[0m \u001b[90m 148 |\u001b[39m         responseBody\u001b[33m:\u001b[39m rawText\u001b[33m,\u001b[39m\n \u001b[90m 149 |\u001b[39m       })\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 150 |\u001b[39m       \u001b[36mthrow\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mError\u001b[39m(\u001b[32m`Falha na requisição de OCR (${response.status})`\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m             \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 151 |\u001b[39m     }\n \u001b[90m 152 |\u001b[39m\n \u001b[90m 153 |\u001b[39m     \u001b[36mconst\u001b[39m text\u001b[33m:\u001b[39m string \u001b[33m=\u001b[39m data\u001b[33m?\u001b[39m\u001b[33m.\u001b[39m\u001b[33mParsedResults\u001b[39m\u001b[33m?\u001b[39m\u001b[33m.\u001b[39m[\u001b[35m0\u001b[39m]\u001b[33m?\u001b[39m\u001b[33m.\u001b[39m\u001b[33mParsedText\u001b[39m \u001b[33m?\u001b[39m\u001b[33m?\u001b[39m \u001b[32m\"\"\u001b[39m\u001b[33m;\u001b[39m\u001b[0m\n\u001b[1mCall Stack\u001b[22m\n\u001b[90m  recognizeWithOcrSpace (src\\services\\ocrService.ts:150:13)\u001b[39m\n\u001b[90m  recognizeWithAutoMode (src\\services\\ocrService.ts:93:12)\u001b[39m\n\u001b[90m  handlePickImage (src\\components\\OcrScannerModal.tsx:82:26)\u001b[39m"]}
+{"_e":"metro:client_log","_t":1787012780374,"level":"error","data":["[OCR] Erro ao chamar OCR.Space.","[Error: Falha na requisição de OCR (400)]","\n\n\u001b[1mCode: ocrService.ts\u001b[22m\n\u001b[0m \u001b[90m 148 |\u001b[39m         responseBody\u001b[33m:\u001b[39m rawText\u001b[33m,\u001b[39m\n \u001b[90m 149 |\u001b[39m       })\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 150 |\u001b[39m       \u001b[36mthrow\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mError\u001b[39m(\u001b[32m`Falha na requisição de OCR (${response.status})`\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m             \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 151 |\u001b[39m     }\n \u001b[90m 152 |\u001b[39m\n \u001b[90m 153 |\u001b[39m     \u001b[36mconst\u001b[39m text\u001b[33m:\u001b[39m string \u001b[33m=\u001b[39m data\u001b[33m?\u001b[39m\u001b[33m.\u001b[39m\u001b[33mParsedResults\u001b[39m\u001b[33m?\u001b[39m\u001b[33m.\u001b[39m[\u001b[35m0\u001b[39m]\u001b[33m?\u001b[39m\u001b[33m.\u001b[39m\u001b[33mParsedText\u001b[39m \u001b[33m?\u001b[39m\u001b[33m?\u001b[39m \u001b[32m\"\"\u001b[39m\u001b[33m;\u001b[39m\u001b[0m\n\u001b[1mCall Stack\u001b[22m\n\u001b[90m  recognizeWithOcrSpace (src\\services\\ocrService.ts:150:13)\u001b[39m\n\u001b[90m  recognizeWithAutoMode (src\\services\\ocrService.ts:93:12)\u001b[39m\n\u001b[90m  handlePickImage (src\\components\\OcrScannerModal.tsx:82:26)\u001b[39m"]}
+{"_e":"metro:bundling:started","_t":1787012815831,"id":"x","platform":"web","environment":null,"entry":"src\\components\\OcrScannerModal.tsx"}
+{"_e":"root:init","_t":1787012850630,"format":"v0-jsonl","version":"57.0.12"}
+{"_e":"env:mode","_t":1787012850630,"nodeEnv":"development","babelEnv":"development","mode":"development"}
+{"_e":"env:load","_t":1787012850632,"mode":"development","files":[],"env":{}}
+{"_e":"devserver:start","_t":1787012850824,"mode":"development","web":true,"baseUrl":"","asyncRoutes":false,"routerRoot":"../..\\..\\app","serverComponents":false,"serverActions":false,"serverRendering":false,"apiRoutes":false,"exporting":false}
+{"_e":"metro:config","_t":1787012851001,"serverRoot":"../..\\..","projectRoot":"../..\\..","exporting":false,"flags":{"autolinkingModuleResolution":false,"serverActions":false,"serverComponents":false,"reactCompiler":false,"optimizeGraph":false,"treeshaking":false,"logbox":false}}
+{"_e":"expo:dev-tools-plugin:load","_t":1787012851108,"plugins":[]}
+{"_e":"metro:instantiate","_t":1787012854010,"atlas":false,"workers":15,"host":"::","port":8081}
+{"_e":"metro:bundling:started","_t":1787012856147,"id":"1","platform":"web","environment":null,"entry":"index.ts"}
+{"_e":"metro:bundling:progress","_t":1787012856148,"id":"1","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1787012856152,"id":"1","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1787012856252,"id":"1","progress":0.1829365655392655,"total":166,"current":71}
+{"_e":"metro:bundling:progress","_t":1787012856352,"id":"1","progress":0.2634024803336973,"total":378,"current":194}
+{"_e":"metro:bundling:progress","_t":1787012856452,"id":"1","progress":0.5408514146674979,"total":446,"current":328}
+{"_e":"metro:bundling:progress","_t":1787012856552,"id":"1","progress":0.7195719381688467,"total":580,"current":492}
+{"_e":"metro:bundling:started","_t":1787012856608,"id":"3","platform":"web","environment":null,"entry":"index.ts"}
+{"_e":"metro:bundling:progress","_t":1787012856608,"id":"1","progress":0.7195719381688467,"total":580,"current":492}
+{"_e":"metro:bundling:progress","_t":1787012856608,"id":"3","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1787012856670,"id":"1","progress":0.9052410766301082,"total":659,"current":627}
+{"_e":"metro:bundling:progress","_t":1787012856670,"id":"3","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1787012856759,"id":"1","total":659,"ms":610.7016}
+{"_e":"metro:bundling:progress","_t":1787012856759,"id":"3","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1787012856777,"id":"3","total":1,"ms":169.3004}
+{"_e":"metro:bundling:started","_t":1787012856884,"id":"5","platform":"web","environment":null,"entry":"index.ts"}
+{"_e":"metro:client_log","_t":1787012856939,"level":"info","data":["%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools","font-weight:bold"]}
+{"_e":"metro:client_log","_t":1787012856940,"level":"warn","data":["\"shadow*\" style props are deprecated. Use \"boxShadow\"."]}
+{"_e":"metro:client_log","_t":1787012856940,"level":"log","data":["Running application \"main\" with appParams:\n","{\"hydrate\": undefined, \"rootTag\": \"#root\"}","\nDevelopment-level warnings: ON.\nPerformance optimizations: OFF."]}
+{"_e":"metro:client_log","_t":1787012858163,"level":"warn","data":["props.pointerEvents is deprecated. Use style.pointerEvents"]}
+{"_e":"metro:client_log","_t":1787012861073,"level":"warn","data":["[expo-image-picker] `ImagePicker.MediaTypeOptions` have been deprecated. Use `ImagePicker.MediaType` or an array of `ImagePicker.MediaType` instead."]}
+{"_e":"metro:client_log","_t":1787012862543,"level":"log","data":["[OCR] Enviando imagem para OCR.Space:","{\"apiKeyPrefix\": \"K84712\", \"firstChars\": \"iVBORw0KGgoAAAAN\", \"length\": 100264}"]}
+{"_e":"metro:client_log","_t":1787012862985,"level":"error","data":["[OCR] OCR.Space respondeu com erro:","{\"responseBody\": \"{\\\"error\\\":\\\"E501: Not an image or PDF\\\",\\\"details\\\":\\\"Invalid base64 Data URI.\\\"}\", \"status\": 400, \"statusText\": \"\"}","\n\n\u001b[1mCode: ocrService.ts\u001b[22m\n\u001b[0m \u001b[90m 143 |\u001b[39m\n \u001b[90m 144 |\u001b[39m     \u001b[36mif\u001b[39m (\u001b[33m!\u001b[39mresponse\u001b[33m.\u001b[39mok) {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 145 |\u001b[39m       console\u001b[33m.\u001b[39merror(\u001b[32m\"[OCR] OCR.Space respondeu com erro:\"\u001b[39m\u001b[33m,\u001b[39m {\n \u001b[90m     |\u001b[39m               \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 146 |\u001b[39m         status\u001b[33m:\u001b[39m response\u001b[33m.\u001b[39mstatus\u001b[33m,\u001b[39m\n \u001b[90m 147 |\u001b[39m         statusText\u001b[33m:\u001b[39m response\u001b[33m.\u001b[39mstatusText\u001b[33m,\u001b[39m\n \u001b[90m 148 |\u001b[39m         responseBody\u001b[33m:\u001b[39m rawText\u001b[33m,\u001b[39m\u001b[0m\n\u001b[1mCall Stack\u001b[22m\n\u001b[90m  recognizeWithOcrSpace (src\\services\\ocrService.ts:145:15)\u001b[39m\n\u001b[90m  recognizeWithAutoMode (src\\services\\ocrService.ts:93:12)\u001b[39m\n\u001b[90m  handlePickImage (src\\components\\OcrScannerModal.tsx:109:26)\u001b[39m"]}
+{"_e":"metro:client_log","_t":1787012862985,"level":"error","data":["[OCR] Erro ao chamar OCR.Space.","[Error: Falha na requisição de OCR (400)]","\n\n\u001b[1mCode: ocrService.ts\u001b[22m\n\u001b[0m \u001b[90m 148 |\u001b[39m         responseBody\u001b[33m:\u001b[39m rawText\u001b[33m,\u001b[39m\n \u001b[90m 149 |\u001b[39m       })\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 150 |\u001b[39m       \u001b[36mthrow\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mError\u001b[39m(\u001b[32m`Falha na requisição de OCR (${response.status})`\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m             \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 151 |\u001b[39m     }\n \u001b[90m 152 |\u001b[39m\n \u001b[90m 153 |\u001b[39m     \u001b[36mconst\u001b[39m text\u001b[33m:\u001b[39m string \u001b[33m=\u001b[39m data\u001b[33m?\u001b[39m\u001b[33m.\u001b[39m\u001b[33mParsedResults\u001b[39m\u001b[33m?\u001b[39m\u001b[33m.\u001b[39m[\u001b[35m0\u001b[39m]\u001b[33m?\u001b[39m\u001b[33m.\u001b[39m\u001b[33mParsedText\u001b[39m \u001b[33m?\u001b[39m\u001b[33m?\u001b[39m \u001b[32m\"\"\u001b[39m\u001b[33m;\u001b[39m\u001b[0m\n\u001b[1mCall Stack\u001b[22m\n\u001b[90m  recognizeWithOcrSpace (src\\services\\ocrService.ts:150:13)\u001b[39m\n\u001b[90m  recognizeWithAutoMode (src\\services\\ocrService.ts:93:12)\u001b[39m\n\u001b[90m  handlePickImage (src\\components\\OcrScannerModal.tsx:109:26)\u001b[39m"]}
+{"_e":"metro:client_log","_t":1787012862986,"level":"error","data":["[OCR] OCR.Space falhou. Usando modo demonstração.","[Error: Falha na requisição de OCR (400)]","\n\n\u001b[1mCode: ocrService.ts\u001b[22m\n\u001b[0m \u001b[90m 148 |\u001b[39m         responseBody\u001b[33m:\u001b[39m rawText\u001b[33m,\u001b[39m\n \u001b[90m 149 |\u001b[39m       })\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 150 |\u001b[39m       \u001b[36mthrow\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mError\u001b[39m(\u001b[32m`Falha na requisição de OCR (${response.status})`\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m             \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 151 |\u001b[39m     }\n \u001b[90m 152 |\u001b[39m\n \u001b[90m 153 |\u001b[39m     \u001b[36mconst\u001b[39m text\u001b[33m:\u001b[39m string \u001b[33m=\u001b[39m data\u001b[33m?\u001b[39m\u001b[33m.\u001b[39m\u001b[33mParsedResults\u001b[39m\u001b[33m?\u001b[39m\u001b[33m.\u001b[39m[\u001b[35m0\u001b[39m]\u001b[33m?\u001b[39m\u001b[33m.\u001b[39m\u001b[33mParsedText\u001b[39m \u001b[33m?\u001b[39m\u001b[33m?\u001b[39m \u001b[32m\"\"\u001b[39m\u001b[33m;\u001b[39m\u001b[0m\n\u001b[1mCall Stack\u001b[22m\n\u001b[90m  recognizeWithOcrSpace (src\\services\\ocrService.ts:150:13)\u001b[39m\n\u001b[90m  recognizeWithAutoMode (src\\services\\ocrService.ts:93:12)\u001b[39m\n\u001b[90m  handlePickImage (src\\components\\OcrScannerModal.tsx:109:26)\u001b[39m"]}
+{"_e":"metro:bundling:started","_t":1787012953497,"id":"c","platform":"web","environment":null,"entry":"src\\services\\ocrService.ts"}
