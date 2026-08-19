@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Modal,
   Pressable,
@@ -17,17 +17,32 @@ interface CreateFlashcardModalProps {
   visible: boolean;
   onClose: () => void;
   onCreate: (front: string, back: string) => void;
+  initialFront?: string;
+  initialBack?: string;
+  title?: string;
+  submitLabel?: string;
 }
 
 export default function CreateFlashcardModal({
   visible,
   onClose,
   onCreate,
+  initialFront = "",
+  initialBack = "",
+  title = "Novo flashcard",
+  submitLabel = "Adicionar flashcard",
 }: CreateFlashcardModalProps) {
   const { colors } = useSettings();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [front, setFront] = useState("");
   const [back, setBack] = useState("");
+
+  useEffect(() => {
+    if (visible) {
+      setFront(initialFront);
+      setBack(initialBack);
+    }
+  }, [initialBack, initialFront, visible]);
 
   function handleCreate() {
     if (!front.trim() || !back.trim()) {
@@ -53,7 +68,7 @@ export default function CreateFlashcardModal({
       <View style={styles.overlay}>
         <View style={styles.container}>
           <View style={styles.header}>
-            <Text style={styles.title}>Novo flashcard</Text>
+            <Text style={styles.title}>{title}</Text>
             <Pressable onPress={handleClose} hitSlop={8}>
               <Ionicons name="close" size={24} color={colors.textSecondary} />
             </Pressable>
@@ -100,7 +115,7 @@ export default function CreateFlashcardModal({
             onPress={handleCreate}
             disabled={!canCreate}
           >
-            <Text style={styles.buttonText}>Adicionar flashcard</Text>
+            <Text style={styles.buttonText}>{submitLabel}</Text>
           </Pressable>
         </View>
       </View>

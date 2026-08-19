@@ -68,8 +68,8 @@ export default function SubjectStatsModal({ subjectId, visible, onClose }: Props
             {wrongs.length === 0 ? (
               <Text style={styles.empty}>Nenhum conteúdo com erros registrados</Text>
             ) : (
-              wrongs.map((f) => (
-                <View key={f.id} style={styles.wrongRow}>
+              wrongs.map((f, cardIndex) => (
+                <View key={`${f.id}-${cardIndex}`} style={styles.wrongRow}>
                   <Text style={styles.wrongFront}>{f.front}</Text>
                   <Text style={styles.wrongMeta}>{subject?.topics.find((t) => t.id === f.topicId)?.title} • revisado {f.reviewedCount ?? 0}x</Text>
                 </View>

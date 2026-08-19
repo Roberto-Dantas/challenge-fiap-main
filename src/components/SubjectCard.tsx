@@ -11,6 +11,8 @@ interface SubjectCardProps {
   expanded: boolean;
   onToggle: () => void;
   onTopicPress: (topic: Topic) => void;
+  onAddTopic: () => void;
+  onDelete: () => void;
   topicReviewed?: Record<string, boolean>;
   containerStyle?: ViewStyle;
 }
@@ -20,6 +22,8 @@ export default function SubjectCard({
   expanded,
   onToggle,
   onTopicPress,
+  onAddTopic,
+  onDelete,
   topicReviewed,
   containerStyle,
 }: SubjectCardProps) {
@@ -57,12 +61,20 @@ export default function SubjectCard({
 
       {expanded && (
         <View style={styles.topicsContainer}>
+          <Pressable style={styles.addTopicButton} onPress={onAddTopic}>
+            <Ionicons name="add-circle-outline" size={18} color={colors.primary} />
+            <Text style={styles.addTopicText}>Novo conteúdo</Text>
+          </Pressable>
+          <Pressable style={styles.deleteSubjectButton} onPress={onDelete}>
+            <Ionicons name="trash-outline" size={18} color={colors.danger} />
+            <Text style={styles.deleteSubjectText}>Excluir matéria</Text>
+          </Pressable>
           {subject.topics.length === 0 ? (
             <Text style={styles.emptyTopics}>Nenhum tópico cadastrado</Text>
           ) : (
-            subject.topics.map((topic) => (
+            subject.topics.map((topic, topicIndex) => (
               <Pressable
-                key={topic.id}
+                key={`${topic.id}-${topicIndex}`}
                 style={styles.topicRow}
                 onPress={() => onTopicPress(topic)}
               >
@@ -142,6 +154,32 @@ const createStyles = (colors: ReturnType<typeof useSettings>['colors']) =>
       borderBottomRightRadius: 16,
       paddingHorizontal: 12,
       paddingBottom: 8,
+    },
+    addTopicButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      paddingHorizontal: 8,
+      paddingVertical: 14,
+    },
+    addTopicText: {
+      color: colors.primary,
+      fontSize: 14,
+      fontWeight: "700",
+    },
+    deleteSubjectButton: {
+      alignItems: "center",
+      borderTopColor: colors.border,
+      borderTopWidth: 1,
+      flexDirection: "row",
+      gap: 8,
+      paddingHorizontal: 8,
+      paddingVertical: 14,
+    },
+    deleteSubjectText: {
+      color: colors.danger,
+      fontSize: 14,
+      fontWeight: "700",
     },
     topicRow: {
       flexDirection: "row",

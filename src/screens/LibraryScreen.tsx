@@ -1,8 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useMemo, useState, useEffect } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback, useMemo, useRef, useState, useEffect } from "react";
 import {
+  Alert,
   FlatList,
+  RefreshControl,
   Pressable,
   StyleSheet,
   Text,
@@ -12,6 +15,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import CreateSubjectModal from "../components/CreateSubjectModal";
+import CreateTopicModal from "../components/CreateTopicModal";
 import SubjectCard from "../components/SubjectCard";
 import { useLibrary } from "../context/LibraryContext";
 import { useSettings } from "../context/SettingsContext";
@@ -25,16 +29,39 @@ type FilterOption = "all" | "due" | "reviewed" | "notReviewed";
 
 export default function LibraryScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
-  const { subjects, flashcards, addSubject } = useLibrary();
+  const { subjects, flashcards, addSubject, deleteSubject, addTopic, refreshLibrary } = useLibrary();
   const { colors } = useSettings();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [topicModalSubjectId, setTopicModalSubjectId] = useState<string | null>(null);
   const [sortOption, setSortOption] = useState<SortOption>("due");
   const [filterOption, setFilterOption] = useState<FilterOption>("all");
   const [showFilters, setShowFilters] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const listRef = useRef<FlatList<Subject>>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      listRef.current?.scrollToOffset({ offset: 0, animated: false });
+      setExpandedId(null);
+      setSearchQuery("");
+      setModalVisible(false);
+      setTopicModalSubjectId(null);
+      setShowFilters(false);
+    }, []),
+  );
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refreshLibrary();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshLibrary]);
 
   // If another screen requested opening a specific topic, navigate to it
   useEffect(() => {
@@ -130,12 +157,45 @@ export default function LibraryScreen({ navigation, route }: Props) {
     setExpandedId((current) => (current === subjectId ? null : subjectId));
   }
 
+  function handleDeleteSubject(subject: Subject) {
+    Alert.alert(
+      `Excluir ${subject.title}?`,
+      "A matéria e todos os seus conteúdos, flashcards, resumos e questões serão apagados.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Excluir",
+          style: "destructive",
+          onPress: () => {
+            deleteSubject(subject.id);
+            setExpandedId(null);
+          },
+        },
+      ],
+    );
+  }
+
   function handleTopicPress(subject: Subject, topic: Topic) {
     navigation.navigate("ContentDetail", {
       topicId: topic.id,
       subjectTitle: subject.title,
       subjectSubtitle: subject.subtitle,
       topicTitle: topic.title,
+    });
+  }
+
+  function handleCreateTopic(title: string) {
+    if (!topicModalSubjectId) return;
+    const subject = subjects.find((item) => item.id === topicModalSubjectId);
+    const topicId = addTopic(topicModalSubjectId, title);
+    setTopicModalSubjectId(null);
+    if (!subject || !topicId) return;
+
+    navigation.navigate("ContentDetail", {
+      topicId,
+      subjectTitle: subject.title,
+      subjectSubtitle: subject.subtitle,
+      topicTitle: title,
     });
   }
 
@@ -146,6 +206,8 @@ export default function LibraryScreen({ navigation, route }: Props) {
         expanded={expandedId === item.id}
         onToggle={() => handleToggle(item.id)}
         onTopicPress={(topic) => handleTopicPress(item, topic)}
+        onAddTopic={() => setTopicModalSubjectId(item.id)}
+        onDelete={() => handleDeleteSubject(item)}
       />
     );
   }
@@ -249,12 +311,14 @@ export default function LibraryScreen({ navigation, route }: Props) {
       </View>
 
       <FlatList
+        ref={listRef}
         data={filteredSubjects}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item, index) => `${item.id}-${index}`}
         renderItem={renderSubject}
         numColumns={1}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} colors={[colors.primary]} />}
         ListEmptyComponent={
           <Text style={styles.emptyText}>Nenhuma matéria encontrada</Text>
         }
@@ -271,6 +335,11 @@ export default function LibraryScreen({ navigation, route }: Props) {
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
         onCreate={(title, subtitle, icon) => addSubject({ title, subtitle, icon })}
+      />
+      <CreateTopicModal
+        visible={topicModalSubjectId !== null}
+        onClose={() => setTopicModalSubjectId(null)}
+        onCreate={handleCreateTopic}
       />
     </View>
   );

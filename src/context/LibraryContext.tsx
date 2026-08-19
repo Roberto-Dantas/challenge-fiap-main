@@ -1,5 +1,6 @@
 import {
   createContext,
+  useEffect,
   useCallback,
   useContext,
   useMemo,
@@ -7,9 +8,20 @@ import {
   type ReactNode,
 } from "react";
 
-import { initialFlashcards } from "../data/initialFlashcards";
-import { initialSubjects } from "../data/initialData";
-import { Flashcard, FlashcardDifficulty, Subject, SubjectIcon } from "../types";
+import { useAuth } from "./AuthContext";
+import { loadLibrary, saveLibrary } from "../services/libraryStorage";
+import {
+  cancelReviewReminder,
+  scheduleReviewReminder,
+} from "../services/reviewNotificationService";
+import {
+  Flashcard,
+  FlashcardDifficulty,
+  Question,
+  Subject,
+  SubjectIcon,
+  Summary,
+} from "../types";
 
 interface CreateSubjectInput {
   title: string;
@@ -24,15 +36,44 @@ interface CreateFlashcardInput {
   difficulty?: FlashcardDifficulty;
 }
 
+interface UpdateFlashcardInput {
+  front: string;
+  back: string;
+}
+
+interface CreateSummaryInput {
+  topicId: string;
+  title: string;
+  content: string;
+}
+
+interface CreateQuestionInput {
+  topicId: string;
+  prompt: string;
+  options: string[];
+  correctOption: number;
+  explanation?: string;
+}
+
 interface LibraryContextValue {
   subjects: Subject[];
   flashcards: Flashcard[];
+  summaries: Summary[];
+  questions: Question[];
   addSubject: (input: CreateSubjectInput) => void;
-  addTopic: (subjectId: string, title: string) => void;
+  deleteSubject: (subjectId: string) => void;
+  addTopic: (subjectId: string, title: string) => string | null;
   addFlashcard: (input: CreateFlashcardInput) => void;
+  updateFlashcard: (flashcardId: string, input: UpdateFlashcardInput) => void;
+  deleteFlashcard: (flashcardId: string) => void;
+  addSummary: (input: CreateSummaryInput) => void;
+  addQuestion: (input: CreateQuestionInput) => void;
   markFlashcardReviewed: (flashcardId: string, difficulty: FlashcardDifficulty) => void;
   getFlashcardsByTopic: (topicId: string) => Flashcard[];
+  getSummariesByTopic: (topicId: string) => Summary[];
+  getQuestionsByTopic: (topicId: string) => Question[];
   getDueFlashcards: () => Flashcard[];
+  refreshLibrary: () => Promise<void>;
 }
 
 const LibraryContext = createContext<LibraryContextValue | null>(null);
@@ -61,8 +102,75 @@ function getNextReviewAt(difficulty: FlashcardDifficulty) {
 }
 
 export function LibraryProvider({ children }: { children: ReactNode }) {
-  const [subjects, setSubjects] = useState<Subject[]>(initialSubjects);
-  const [flashcards, setFlashcards] = useState<Flashcard[]>(initialFlashcards);
+  const { user, isLoading: isAuthLoading } = useAuth();
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
+  const [summaries, setSummaries] = useState<Summary[]>([]);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  const userKey = user?.email.trim().toLowerCase() ?? null;
+
+  useEffect(() => {
+    let isCurrent = true;
+
+    if (isAuthLoading) {
+      return () => {
+        isCurrent = false;
+      };
+    }
+
+    if (!userKey) {
+      setSubjects([]);
+      setFlashcards([]);
+      setIsHydrated(false);
+      return () => {
+        isCurrent = false;
+      };
+    }
+
+    setIsHydrated(false);
+    loadLibrary(userKey, {
+      schemaVersion: 3,
+      subjects: [],
+      flashcards: [],
+      summaries: [],
+      questions: [],
+    }).then((stored) => {
+      if (!isCurrent) return;
+      setSubjects(stored.subjects);
+      setFlashcards(stored.flashcards);
+      setSummaries(stored.summaries ?? []);
+      setQuestions(stored.questions ?? []);
+      setIsHydrated(true);
+    });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [isAuthLoading, userKey]);
+
+  const refreshLibrary = useCallback(async () => {
+    if (!userKey) return;
+    const stored = await loadLibrary(userKey, {
+      schemaVersion: 3,
+      subjects: [],
+      flashcards: [],
+      summaries: [],
+      questions: [],
+    });
+    setSubjects(stored.subjects);
+    setFlashcards(stored.flashcards);
+    setSummaries(stored.summaries ?? []);
+    setQuestions(stored.questions ?? []);
+  }, [userKey]);
+
+  useEffect(() => {
+    if (!userKey || !isHydrated) return;
+    saveLibrary(userKey, subjects, flashcards, summaries, questions).catch((error) => {
+      console.warn("Falha ao salvar biblioteca offline", error);
+    });
+  }, [flashcards, isHydrated, questions, subjects, summaries, userKey]);
 
   const addSubject = useCallback((input: CreateSubjectInput) => {
     const trimmedTitle = input.title.trim();
@@ -87,11 +195,24 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const deleteSubject = useCallback((subjectId: string) => {
+    const subject = subjects.find((item) => item.id === subjectId);
+    if (!subject) return;
+
+    const topicIds = new Set(subject.topics.map((topic) => topic.id));
+    setSubjects((current) => current.filter((item) => item.id !== subjectId));
+    setFlashcards((cards) => cards.filter((card) => !topicIds.has(card.topicId)));
+    setSummaries((items) => items.filter((summary) => !topicIds.has(summary.topicId)));
+    setQuestions((items) => items.filter((question) => !topicIds.has(question.topicId)));
+  }, [subjects]);
+
   const addTopic = useCallback((subjectId: string, title: string) => {
     const trimmedTitle = title.trim();
     if (!trimmedTitle) {
-      return;
+      return null;
     }
+
+    const topicId = `${subjectId}-${Date.now()}`;
 
     setSubjects((current) =>
       current.map((subject) =>
@@ -100,12 +221,14 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
               ...subject,
               topics: [
                 ...subject.topics,
-                { id: `${subjectId}-${Date.now()}`, title: trimmedTitle },
+                { id: topicId, title: trimmedTitle },
               ],
             }
           : subject,
       ),
     );
+
+    return topicId;
   }, []);
 
   const addFlashcard = useCallback((input: CreateFlashcardInput) => {
@@ -132,8 +255,65 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     setFlashcards((current) => [...current, newFlashcard]);
   }, []);
 
+  const updateFlashcard = useCallback((flashcardId: string, input: UpdateFlashcardInput) => {
+    const front = input.front.trim();
+    const back = input.back.trim();
+    if (!front || !back) return;
+
+    setFlashcards((current) => current.map((flashcard) =>
+      flashcard.id === flashcardId ? { ...flashcard, front, back } : flashcard,
+    ));
+  }, []);
+
+  const deleteFlashcard = useCallback((flashcardId: string) => {
+    setFlashcards((current) => current.filter((flashcard) => flashcard.id !== flashcardId));
+  }, []);
+
+  const addSummary = useCallback((input: CreateSummaryInput) => {
+    const title = input.title.trim();
+    const content = input.content.trim();
+    if (!title || !content) return;
+
+    setSummaries((current) => [
+      ...current,
+      { id: `summary-${Date.now()}`, topicId: input.topicId, title, content, createdAt: new Date().toISOString() },
+    ]);
+  }, []);
+
+  const addQuestion = useCallback((input: CreateQuestionInput) => {
+    const prompt = input.prompt.trim();
+    const options = input.options.map((option) => option.trim()).filter(Boolean);
+    if (!prompt || options.length < 2 || input.correctOption < 0 || input.correctOption >= options.length) return;
+
+    setQuestions((current) => [
+      ...current,
+      {
+        id: `question-${Date.now()}`,
+        topicId: input.topicId,
+        prompt,
+        options,
+        correctOption: input.correctOption,
+        explanation: input.explanation?.trim() || undefined,
+        createdAt: new Date().toISOString(),
+      },
+    ]);
+  }, []);
+
   const markFlashcardReviewed = useCallback(
-    (flashcardId: string, difficulty: FlashcardDifficulty) => {
+    async (flashcardId: string, difficulty: FlashcardDifficulty) => {
+      const currentCard = flashcards.find((flashcard) => flashcard.id === flashcardId);
+      if (!currentCard) return;
+
+      const nextReviewAt = getNextReviewAt(difficulty);
+      await cancelReviewReminder(currentCard.reviewNotificationId);
+      const subject = subjects.find((item) => item.topics.some((topic) => topic.id === currentCard.topicId));
+      const topic = subject?.topics.find((item) => item.id === currentCard.topicId);
+      const notificationId = await scheduleReviewReminder(
+        subject?.title ?? "Sua biblioteca",
+        topic?.title ?? "Flashcards",
+        nextReviewAt,
+      );
+
       setFlashcards((current) =>
         current.map((fc) =>
           fc.id === flashcardId
@@ -144,19 +324,30 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
                 difficulty,
                 reviewedCount: (fc.reviewedCount ?? 0) + 1,
                 lastReviewedAt: Date.now(),
-                nextReviewAt: getNextReviewAt(difficulty),
+                nextReviewAt,
+                reviewNotificationId: notificationId,
               }
             : fc,
         ),
       );
     },
-    [],
+    [flashcards, subjects],
   );
 
   const getFlashcardsByTopic = useCallback(
     (topicId: string) =>
       flashcards.filter((flashcard) => flashcard.topicId === topicId),
     [flashcards],
+  );
+
+  const getSummariesByTopic = useCallback(
+    (topicId: string) => summaries.filter((summary) => summary.topicId === topicId),
+    [summaries],
+  );
+
+  const getQuestionsByTopic = useCallback(
+    (topicId: string) => questions.filter((question) => question.topicId === topicId),
+    [questions],
   );
 
   const getDueFlashcards = useCallback(() => {
@@ -176,15 +367,29 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     () => ({
       subjects,
       flashcards,
+      summaries,
+      questions,
       addSubject,
+      deleteSubject,
       addTopic,
       addFlashcard,
+      updateFlashcard,
+      deleteFlashcard,
+      addSummary,
+      addQuestion,
       markFlashcardReviewed,
       getFlashcardsByTopic,
+      getSummariesByTopic,
+      getQuestionsByTopic,
       getDueFlashcards,
+      refreshLibrary,
     }),
-    [subjects, flashcards, addSubject, addTopic, addFlashcard, markFlashcardReviewed, getFlashcardsByTopic, getDueFlashcards],
+    [subjects, flashcards, summaries, questions, addSubject, deleteSubject, addTopic, addFlashcard, updateFlashcard, deleteFlashcard, addSummary, addQuestion, markFlashcardReviewed, getFlashcardsByTopic, getSummariesByTopic, getQuestionsByTopic, getDueFlashcards, refreshLibrary],
   );
+
+  if (isAuthLoading || (userKey !== null && !isHydrated)) {
+    return null;
+  }
 
   return (
     <LibraryContext.Provider value={value}>{children}</LibraryContext.Provider>

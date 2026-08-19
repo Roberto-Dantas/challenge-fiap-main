@@ -37,6 +37,12 @@
         }
       ],
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "O NoteZ usa suas fotos para reconhecer textos e criar flashcards."
+        }
+      ],
+      [
         "expo-mlkit-ocr",
         {
           "iosEngine": "auto"

@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   FlatList,
+  ActivityIndicator,
   Modal,
   Pressable,
   ScrollView,
@@ -12,7 +13,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import SubjectStatsModal from "../components/SubjectStatsModal";
 import ScanTextButton from "../components/ScanTextButton";
 
@@ -26,8 +27,6 @@ const actionItems = [
   { key: "quiz", title: "Quiz", icon: "school-outline" },
   { key: "resumos", title: "Resumos", icon: "document-text-outline" },
 ] as const;
-
-const DAILY_GOAL = 20;
 
 function isSameDay(timestamp: number, compareTo: number) {
   const date = new Date(timestamp);
@@ -80,17 +79,39 @@ function calculateStreak(flashcards: any[]) {
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<BottomTabNavigationProp<RootTabParamList>>();
-  const { subjects, flashcards, getDueFlashcards, getFlashcardsByTopic } = useLibrary();
-  const { colors, theme, setTheme } = useSettings();
+  const { subjects, flashcards, getDueFlashcards, getFlashcardsByTopic, refreshLibrary } = useLibrary();
+  const { colors, theme, setTheme, dailyGoal } = useSettings();
   const styles = useMemo(() => useMemoStyles(colors), [colors]);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [showDueModal, setShowDueModal] = useState(false);
   const [showPerformanceModal, setShowPerformanceModal] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
+      setSelectedSubject(null);
+      setShowDueModal(false);
+      setShowPerformanceModal(false);
+      setScannedText(null);
+      setSearchQuery("");
+    }, []),
+  );
   const [scannedText, setScannedText] = useState<string | null>(null);
   const mode = theme;
   const toggleTheme = () => setTheme(mode === "light" ? "dark" : "light");
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refreshLibrary();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshLibrary]);
 
   const dueFlashcards = useMemo(() => getDueFlashcards().slice(0, 3), [getDueFlashcards]);
   const reviewedTodayCount = useMemo(
@@ -103,8 +124,8 @@ export default function HomeScreen() {
   );
   
   const streak = useMemo(() => calculateStreak(flashcards), [flashcards]);
-  const dailyGoalProgress = Math.min(reviewedTodayCount, DAILY_GOAL);
-  const dailyGoalPercent = Math.round((dailyGoalProgress / DAILY_GOAL) * 100);
+  const dailyGoalProgress = Math.min(reviewedTodayCount, dailyGoal);
+  const dailyGoalPercent = Math.round((dailyGoalProgress / dailyGoal) * 100);
 
   const filteredSubjects = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -184,10 +205,7 @@ export default function HomeScreen() {
       return topicsWithStudy.slice(0, 3).map(({ subject, topic }) => ({ subject, topic }));
     }
 
-    return subjects
-      .slice(0, 2)
-      .flatMap((subject) => subject.topics.slice(0, 1))
-      .map((topic) => ({ subject: subjects.find((subj) => subj.topics.includes(topic))!, topic }));
+    return [];
   }, [subjects, flashcards]);
 
   function handleViewAll() {
@@ -219,20 +237,31 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 16 }]}> 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.topBar}>
           <Text style={[styles.brand, { color: colors.text }]}>NOTEZ</Text>
-          <Pressable
-            style={[styles.themeButton, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}
-            onPress={toggleTheme}
-            hitSlop={8}
-          >
-            <Ionicons
-              name={mode === "dark" ? "sunny-outline" : "moon-outline"}
-              size={20}
-              color={colors.text}
-            />
-          </Pressable>
+          <View style={styles.topActions}>
+            <Pressable
+              style={[styles.themeButton, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}
+              onPress={handleRefresh}
+              hitSlop={8}
+              accessibilityLabel="Atualizar página"
+            >
+              {refreshing ? <ActivityIndicator size="small" color={colors.primary} /> : <Ionicons name="refresh-outline" size={20} color={colors.text} />}
+            </Pressable>
+            <Pressable
+              style={[styles.themeButton, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}
+              onPress={toggleTheme}
+              hitSlop={8}
+              accessibilityLabel="Alternar tema"
+            >
+              <Ionicons name={mode === "dark" ? "sunny-outline" : "moon-outline"} size={20} color={colors.text} />
+            </Pressable>
+          </View>
         </View>
 
         <Text style={[styles.greeting, { color: colors.text }]}>Olá, Estudante!</Text>
@@ -298,7 +327,7 @@ export default function HomeScreen() {
               </View>
               <View style={styles.streakInfo}>
                 <Text style={[styles.streakLabel, { color: colors.textSecondary }]}>Meta diária</Text>
-                <Text style={[styles.streakValue, { color: colors.text }]}>{dailyGoalProgress}/{DAILY_GOAL}</Text>
+                <Text style={[styles.streakValue, { color: colors.text }]}>{dailyGoalProgress}/{dailyGoal}</Text>
               </View>
             </View>
           </View>
@@ -361,7 +390,7 @@ export default function HomeScreen() {
           <FlatList
             data={dueFlashcards}
             horizontal
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item, index) => `${item.id}-${index}`}
             renderItem={({ item }) => {
               const subject = subjects.find((subj) => subj.topics.some((topic) => topic.id === item.topicId));
               return (
@@ -417,7 +446,7 @@ export default function HomeScreen() {
         <FlatList
           data={subjectCards}
           horizontal
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item, index) => `${item.id}-${index}`}
           renderItem={renderSubjectCard}
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.subjectList}
@@ -429,9 +458,11 @@ export default function HomeScreen() {
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Estudado recentemente</Text>
         </View>
 
-        {recentTopics.map(({ subject, topic }) => (
+        {recentTopics.length === 0 ? (
+          <Text style={[styles.emptyHint, { color: colors.textSecondary }]}>Nenhum tópico estudado ainda.</Text>
+        ) : recentTopics.map(({ subject, topic }, topicIndex) => (
           <Pressable
-            key={topic.id}
+            key={`${topic.id}-${topicIndex}`}
             style={[styles.recentCard, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}
             onPress={() =>
               navigation.navigate("Biblioteca" as any, {
@@ -468,12 +499,12 @@ export default function HomeScreen() {
               {dueModalItems.length === 0 ? (
                 <Text style={[styles.modalEmptyText, { color: colors.textSecondary }]}>Nenhum flashcard agendado no momento.</Text>
               ) : (
-                dueModalItems.map((item) => {
+                dueModalItems.map((item, itemIndex) => {
                   const subject = subjects.find((subj) => subj.topics.some((topic) => topic.id === item.topicId));
                   const topicTitle = subject?.topics.find((t) => t.id === item.topicId)?.title ?? "";
                   return (
                     <Pressable
-                      key={item.id}
+                      key={`${item.id}-${itemIndex}`}
                       style={[styles.modalItem, { backgroundColor: colors.surface, borderColor: colors.border }]}
                       onPress={() => {
                         setShowDueModal(false);
@@ -514,8 +545,8 @@ export default function HomeScreen() {
                 </Pressable>
               </View>
 
-              {subjectPerformance.map((subject) => (
-                <View key={subject.id} style={[styles.performanceItem, { backgroundColor: colors.surface, borderColor: colors.border }]}> 
+              {subjectPerformance.map((subject, subjectIndex) => (
+                <View key={`${subject.id}-${subjectIndex}`} style={[styles.performanceItem, { backgroundColor: colors.surface, borderColor: colors.border }]}> 
                   <View style={styles.performanceHeader}>
                     <Text style={[styles.modalItemTitle, { color: colors.text }]}>{subject.title}</Text>
                     <Text style={[styles.performanceProgress, { color: colors.primary }]}>{subject.progress}%</Text>
@@ -550,6 +581,10 @@ const useMemoStyles = (colors: ThemeColors) =>
       alignItems: "center",
       justifyContent: "space-between",
       marginBottom: 24,
+    },
+    topActions: {
+      flexDirection: "row",
+      gap: 8,
     },
     themeButton: {
       width: 44,

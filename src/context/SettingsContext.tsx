@@ -18,17 +18,29 @@ const STORAGE_KEY = "@notez/settings";
 interface SettingsState {
   notificationsEnabled: boolean;
   theme: ThemeMode;
+  goalPeriod: "daily" | "monthly";
+  dailyGoal: number;
+  monthlyGoal: number;
 }
 
 interface SettingsContextValue extends SettingsState {
   colors: typeof lightColors;
   setNotificationsEnabled: (value: boolean) => void;
   setTheme: (value: ThemeMode) => void;
+  goalPeriod: "daily" | "monthly";
+  dailyGoal: number;
+  monthlyGoal: number;
+  setGoalPeriod: (value: "daily" | "monthly") => void;
+  setDailyGoal: (value: number) => void;
+  setMonthlyGoal: (value: number) => void;
 }
 
 const DEFAULT_STATE: SettingsState = {
   notificationsEnabled: true,
   theme: "light",
+  goalPeriod: "daily",
+  dailyGoal: 20,
+  monthlyGoal: 600,
 };
 
 const SettingsContext = createContext<SettingsContextValue | null>(null);
@@ -66,14 +78,32 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     [state, persist],
   );
 
+  const setGoalPeriod = useCallback(
+    (value: "daily" | "monthly") => persist({ ...state, goalPeriod: value }),
+    [state, persist],
+  );
+
+  const setDailyGoal = useCallback(
+    (value: number) => persist({ ...state, dailyGoal: Math.max(1, Math.round(value)) }),
+    [state, persist],
+  );
+
+  const setMonthlyGoal = useCallback(
+    (value: number) => persist({ ...state, monthlyGoal: Math.max(1, Math.round(value)) }),
+    [state, persist],
+  );
+
   const value = useMemo(
     () => ({
       ...state,
       colors: state.theme === "dark" ? darkColors : lightColors,
       setNotificationsEnabled,
       setTheme,
+      setGoalPeriod,
+      setDailyGoal,
+      setMonthlyGoal,
     }),
-    [state, setNotificationsEnabled, setTheme],
+    [state, setNotificationsEnabled, setTheme, setGoalPeriod, setDailyGoal, setMonthlyGoal],
   );
 
   return (

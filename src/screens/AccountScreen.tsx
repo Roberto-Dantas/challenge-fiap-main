@@ -1,10 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { ComponentProps, useMemo } from "react";
-import { Alert, FlatList, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ComponentProps, useCallback, useMemo, useRef, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import { Alert, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAuth } from "../context/AuthContext";
+import { useLibrary } from "../context/LibraryContext";
 import { useSettings } from "../context/SettingsContext";
 import { AccountStackParamList } from "../types";
 import type { ThemeColors } from "../theme/colors";
@@ -23,18 +25,78 @@ interface MenuItem {
 // Tipagem para o objeto de cores
 type ColorTheme = ThemeColors;
 
-const profileMetrics = [
-  { label: "12 dias", value: "Sequência", icon: "flame" },
-  { label: "2.450", value: "Pontos", icon: "trophy" },
-  { label: "75%", value: "Meta diária", icon: "speedometer" },
-  { label: "48", value: "Documentos", icon: "document-text" },
-] as const;
+function isSameDay(timestamp: number, compareTo: number) {
+  const date = new Date(timestamp);
+  const other = new Date(compareTo);
+  return date.getFullYear() === other.getFullYear()
+    && date.getMonth() === other.getMonth()
+    && date.getDate() === other.getDate();
+}
+
+function calculateStreak(flashcards: { lastReviewedAt?: number }[]) {
+  const reviewedDays = new Set(
+    flashcards
+      .filter((flashcard) => flashcard.lastReviewedAt)
+      .map((flashcard) => new Date(flashcard.lastReviewedAt!).toDateString()),
+  );
+
+  if (reviewedDays.size === 0) return 0;
+
+  const currentDate = new Date();
+  if (!reviewedDays.has(currentDate.toDateString())) {
+    currentDate.setDate(currentDate.getDate() - 1);
+  }
+
+  let streak = 0;
+  while (reviewedDays.has(currentDate.toDateString())) {
+    streak += 1;
+    currentDate.setDate(currentDate.getDate() - 1);
+  }
+
+  return streak;
+}
 
 export default function AccountScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const { user, logout } = useAuth();
+  const { subjects, flashcards, refreshLibrary } = useLibrary();
   const { colors } = useSettings();
   const styles = useMemoStyles(colors);
+  const scrollRef = useRef<ScrollView>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refreshLibrary();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshLibrary]);
+
+  useFocusEffect(
+    useCallback(() => {
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
+    }, []),
+  );
+  const profileMetrics = useMemo(() => {
+    const reviewedToday = flashcards.filter(
+      (flashcard) => flashcard.lastReviewedAt && isSameDay(flashcard.lastReviewedAt, Date.now()),
+    ).length;
+    const dailyGoalPercent = Math.min(100, Math.round((reviewedToday / 20) * 100));
+    const totalReviews = flashcards.reduce(
+      (total, flashcard) => total + (flashcard.reviewedCount ?? 0),
+      0,
+    );
+    const streak = calculateStreak(flashcards);
+
+    return [
+      { label: `${streak} dia${streak === 1 ? "" : "s"}`, value: "Sequência", icon: "flame" as const },
+      { label: `${totalReviews}`, value: "Revisões", icon: "trophy" as const },
+      { label: `${dailyGoalPercent}%`, value: "Meta diária", icon: "speedometer" as const },
+      { label: `${subjects.length}`, value: "Matérias", icon: "document-text" as const },
+    ];
+  }, [flashcards, subjects.length]);
 
   const handleLogout = () => {
     Alert.alert("Sair da conta", "Tem certeza que deseja sair?", [
@@ -91,9 +153,11 @@ export default function AccountScreen({ navigation }: Props) {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 16 }]}>
-      <ScrollView
+        <ScrollView
+          ref={scrollRef}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} colors={[colors.primary]} />}
       >
         <View style={styles.profileCard}>
           <View style={styles.profileHeader}>
@@ -107,8 +171,8 @@ export default function AccountScreen({ navigation }: Props) {
           </View>
 
           <View style={styles.metricsGrid}>
-            {profileMetrics.map((metric) => (
-              <View key={metric.label} style={styles.metricCard}>
+            {profileMetrics.map((metric, metricIndex) => (
+              <View key={`${metric.value}-${metric.label}-${metricIndex}`} style={styles.metricCard}>
                 <View style={styles.metricIcon}>
                   <Ionicons name={metric.icon} size={18} color={colors.primary} />
                 </View>
@@ -135,7 +199,7 @@ export default function AccountScreen({ navigation }: Props) {
                     <Ionicons
                       name={item.icon}
                       size={20}
-                      color={item.destructive ? "#dc2626" : colors.primary}
+                      color={item.destructive ? colors.danger : colors.primary}
                     />
                   </View>
                   <Text
@@ -210,8 +274,8 @@ function useMemoStyles(colors: ColorTheme) {
           justifyContent: "center",
           marginBottom: 12,
         },
-        metricValue: { fontSize: 18, fontWeight: "800", color: colors.white, marginBottom: 4 },
-        metricLabel: { fontSize: 13, color: "rgba(255,255,255,0.7)" },
+        metricValue: { fontSize: 18, fontWeight: "800", color: colors.text, marginBottom: 4 },
+        metricLabel: { fontSize: 13, color: colors.textSecondary },
         section: { marginBottom: 24 },
         sectionTitle: {
           fontSize: 15,
@@ -237,7 +301,7 @@ function useMemoStyles(colors: ColorTheme) {
           marginRight: 16,
         },
         menuLabel: { flex: 1, fontSize: 16, color: colors.text, fontWeight: "600" },
-        menuLabelDestructive: { color: "#dc2626" },
+        menuLabelDestructive: { color: colors.danger },
         separator: { height: 12 },
         footerText: { textAlign: "center", color: colors.textSecondary, fontSize: 13, marginTop: 8 },
       }),

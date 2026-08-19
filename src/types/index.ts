@@ -26,6 +26,25 @@ export interface Flashcard {
   lastReviewedAt?: number;
   difficulty: FlashcardDifficulty;
   nextReviewAt?: number;
+  reviewNotificationId?: string;
+}
+
+export interface Summary {
+  id: string;
+  topicId: string;
+  title: string;
+  content: string;
+  createdAt: string;
+}
+
+export interface Question {
+  id: string;
+  topicId: string;
+  prompt: string;
+  options: string[];
+  correctOption: number;
+  explanation?: string;
+  createdAt: string;
 }
 
 export interface Subject {
@@ -54,6 +73,7 @@ export type LibraryStackParamList = {
   FlashcardStudy: {
     topicId: string;
     subjectTitle: string;
+    subjectSubtitle?: string;
     topicTitle: string;
     startIndex?: number;
     flashcardId?: string;

@@ -1,9 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { Pressable, StyleSheet, Switch, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useEffect, useState } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useSettings } from "../../context/SettingsContext";
+import { ThemeColors } from "../../theme/colors";
 import { AccountStackParamList, ThemeMode } from "../../types";
 
 type Props = NativeStackScreenProps<AccountStackParamList, "Settings">;
@@ -16,13 +18,37 @@ const themeOptions: { key: ThemeMode; label: string; icon: keyof typeof Ionicons
 export default function SettingsScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const {
-    notificationsEnabled,
-    setNotificationsEnabled,
     theme,
     setTheme,
     colors,
+    goalPeriod,
+    dailyGoal,
+    monthlyGoal,
+    setGoalPeriod,
+    setDailyGoal,
+    setMonthlyGoal,
   } = useSettings();
   const styles = useMemoStyles(colors);
+  const [goalValue, setGoalValue] = useState(String(goalPeriod === "daily" ? dailyGoal : monthlyGoal));
+
+  useEffect(() => {
+    setGoalValue(String(goalPeriod === "daily" ? dailyGoal : monthlyGoal));
+  }, [dailyGoal, goalPeriod, monthlyGoal]);
+
+  function handleGoalChange(value: string) {
+    const numericValue = value.replace(/[^0-9]/g, "");
+    setGoalValue(numericValue);
+    const parsedValue = Number(numericValue);
+    if (!Number.isNaN(parsedValue) && parsedValue > 0) {
+      if (goalPeriod === "daily") setDailyGoal(parsedValue);
+      else setMonthlyGoal(parsedValue);
+    }
+  }
+
+  function handlePeriodChange(period: "daily" | "monthly") {
+    setGoalPeriod(period);
+    setGoalValue(String(period === "daily" ? dailyGoal : monthlyGoal));
+  }
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 16 }]}>
@@ -35,26 +61,30 @@ export default function SettingsScreen({ navigation }: Props) {
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.sectionTitle}>Notificações</Text>
-        <View style={styles.row}>
-          <View style={styles.rowIconContainer}>
-            <Ionicons name="notifications-outline" size={20} color={colors.primary} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.rowLabel}>Ativar notificações</Text>
-            <Text style={styles.rowDescription}>
-              Receba lembretes de estudo e novidades do app.
-            </Text>
-          </View>
-          <Switch
-            value={notificationsEnabled}
-            onValueChange={setNotificationsEnabled}
-            trackColor={{ false: colors.border, true: colors.primary }}
-            thumbColor={colors.white}
+        <Text style={styles.sectionTitle}>Meta de estudos</Text>
+        <Text style={styles.description}>Defina quantos flashcards você quer revisar.</Text>
+        <View style={styles.periodGroup}>
+          <Pressable style={[styles.periodOption, goalPeriod === "daily" && styles.periodOptionSelected]} onPress={() => handlePeriodChange("daily")}>
+            <Ionicons name="sunny-outline" size={18} color={goalPeriod === "daily" ? colors.white : colors.primary} />
+            <Text style={[styles.periodLabel, goalPeriod === "daily" && styles.periodLabelSelected]}>Diária</Text>
+          </Pressable>
+          <Pressable style={[styles.periodOption, goalPeriod === "monthly" && styles.periodOptionSelected]} onPress={() => handlePeriodChange("monthly")}>
+            <Ionicons name="calendar-outline" size={18} color={goalPeriod === "monthly" ? colors.white : colors.primary} />
+            <Text style={[styles.periodLabel, goalPeriod === "monthly" && styles.periodLabelSelected]}>Mensal</Text>
+          </Pressable>
+        </View>
+        <View style={styles.goalInputRow}>
+          <TextInput
+            style={styles.goalInput}
+            value={goalValue}
+            onChangeText={handleGoalChange}
+            keyboardType="number-pad"
+            selectTextOnFocus
           />
+          <Text style={styles.goalUnit}>flashcards {goalPeriod === "daily" ? "por dia" : "por mês"}</Text>
         </View>
 
-        <Text style={[styles.sectionTitle, { marginTop: 28 }]}>Tema</Text>
+        <Text style={styles.sectionTitle}>Tema</Text>
         <View style={styles.themeGroup}>
           {themeOptions.map((option) => {
             const selected = option.key === theme;
@@ -64,19 +94,8 @@ export default function SettingsScreen({ navigation }: Props) {
                 style={[styles.themeOption, selected && styles.themeOptionSelected]}
                 onPress={() => setTheme(option.key)}
               >
-                <Ionicons
-                  name={option.icon}
-                  size={20}
-                  color={selected ? colors.white : colors.primary}
-                />
-                <Text
-                  style={[
-                    styles.themeOptionLabel,
-                    selected && styles.themeOptionLabelSelected,
-                  ]}
-                >
-                  {option.label}
-                </Text>
+                <Ionicons name={option.icon} size={20} color={selected ? colors.white : colors.primary} />
+                <Text style={[styles.themeOptionLabel, selected && styles.themeOptionLabelSelected]}>{option.label}</Text>
               </Pressable>
             );
           })}
@@ -86,7 +105,7 @@ export default function SettingsScreen({ navigation }: Props) {
   );
 }
 
-function useMemoStyles(colors: Record<string, string>) {
+function useMemoStyles(colors: ThemeColors) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
     header: {
@@ -141,5 +160,14 @@ function useMemoStyles(colors: Record<string, string>) {
     },
     themeOptionLabel: { fontSize: 14, fontWeight: "700", color: colors.text },
     themeOptionLabelSelected: { color: colors.white },
+    description: { color: colors.textSecondary, fontSize: 13, marginBottom: 12 },
+    periodGroup: { flexDirection: "row", gap: 12, marginBottom: 12 },
+    periodOption: { alignItems: "center", backgroundColor: colors.cardBackground, borderColor: colors.border, borderRadius: 14, borderWidth: 1, flex: 1, flexDirection: "row", gap: 8, justifyContent: "center", paddingVertical: 14 },
+    periodOptionSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
+    periodLabel: { color: colors.text, fontSize: 14, fontWeight: "700" },
+    periodLabelSelected: { color: colors.white },
+    goalInputRow: { alignItems: "center", backgroundColor: colors.cardBackground, borderColor: colors.border, borderRadius: 14, borderWidth: 1, flexDirection: "row", paddingHorizontal: 14 },
+    goalInput: { color: colors.text, flex: 1, fontSize: 22, fontWeight: "800", paddingVertical: 14 },
+    goalUnit: { color: colors.textSecondary, fontSize: 13 },
   });
 }

@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useSettings } from "../../context/SettingsContext";
+import { ThemeColors } from "../../theme/colors";
 import { AccountStackParamList } from "../../types";
 
 type Props = NativeStackScreenProps<AccountStackParamList, "Privacy">;
@@ -17,7 +18,7 @@ const sections = [
   {
     title: "2. Como usamos seus dados",
     body:
-      "Seus dados são usados exclusivamente para personalizar sua experiência dentro do app, como salvar seu progresso, preferências de tema e notificações.",
+      "Seus dados são usados exclusivamente para personalizar sua experiência dentro do app, como salvar seu progresso e preferências de tema.",
   },
   {
     title: "3. Armazenamento",
@@ -67,7 +68,7 @@ export default function PrivacyScreen({ navigation }: Props) {
   );
 }
 
-function useMemoStyles(colors: Record<string, string>) {
+function useMemoStyles(colors: ThemeColors) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
     header: {

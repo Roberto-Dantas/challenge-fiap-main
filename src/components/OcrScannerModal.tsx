@@ -43,6 +43,7 @@ export default function OcrScannerModal({
   const [step, setStep] = useState<ScanStep>("camera");
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [recognizedText, setRecognizedText] = useState("");
+  const [textSelection, setTextSelection] = useState({ start: 0, end: 0 });
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isCameraReady, setIsCameraReady] = useState(false);
 
@@ -50,6 +51,7 @@ export default function OcrScannerModal({
     setStep("camera");
     setPhotoUri(null);
     setRecognizedText("");
+    setTextSelection({ start: 0, end: 0 });
     setErrorMessage(null);
     setIsCameraReady(false);
     onClose();
@@ -71,7 +73,12 @@ export default function OcrScannerModal({
       setStep("processing");
       setErrorMessage(null);
 
-      const result = await recognizeTextFromImage({ uri: photo.uri, base64: photo.base64 });
+      // Expo Go does not include ExpoImageManipulator. OCR uses the original image here;
+      // a native crop can be added later in a development build without blocking startup.
+      const result = await recognizeTextFromImage({
+        uri: photo.uri,
+        base64: photo.base64 ?? undefined,
+      });
       setRecognizedText(result.text);
       setStep("result");
     } catch (error: any) {
@@ -80,6 +87,37 @@ export default function OcrScannerModal({
         error?.message ??
           "Não foi possível ler o texto da foto. Tente novamente com mais luz e foco.",
       );
+      setStep("result");
+    }
+  }
+
+  async function handleUpload() {
+    try {
+      // Expo Go may not contain the native picker module. Load it only when needed.
+      const ImagePicker = await import("expo-image-picker");
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: false,
+        quality: 0.9,
+        base64: true,
+      });
+
+      if (result.canceled || !result.assets[0]) return;
+
+      const image = result.assets[0];
+      setPhotoUri(image.uri);
+      setStep("processing");
+      setErrorMessage(null);
+
+      const recognized = await recognizeTextFromImage({
+        uri: image.uri,
+        base64: image.base64 ?? undefined,
+      });
+      setRecognizedText(recognized.text);
+      setStep("result");
+    } catch (error: any) {
+      console.warn("Falha ao selecionar/reconhecer imagem", error);
+      setErrorMessage(error?.message ?? "Não foi possível ler a imagem selecionada.");
       setStep("result");
     }
   }
@@ -112,6 +150,7 @@ export default function OcrScannerModal({
             isCameraReady={isCameraReady}
             setIsCameraReady={setIsCameraReady}
             onCapture={handleCapture}
+            onUpload={handleUpload}
             onClose={resetAndClose}
           />
         )}
@@ -134,6 +173,8 @@ export default function OcrScannerModal({
             photoUri={photoUri}
             recognizedText={recognizedText}
             setRecognizedText={setRecognizedText}
+            textSelection={textSelection}
+            setTextSelection={setTextSelection}
             errorMessage={errorMessage}
             onRetake={handleRetake}
             onConfirm={handleConfirm}
@@ -156,6 +197,7 @@ function CameraScanStep({
   isCameraReady,
   setIsCameraReady,
   onCapture,
+  onUpload,
   onClose,
 }: any) {
   if (!permission) {
@@ -205,6 +247,10 @@ function CameraScanStep({
       <Text style={styles.helperText}>Enquadre o texto e mantenha o aparelho firme</Text>
 
       <View style={[styles.cameraBottomBar, { paddingBottom: insets.bottom + 24 }]}>
+        <Pressable style={styles.uploadButton} onPress={onUpload}>
+          <Ionicons name="images-outline" size={18} color="#FFFFFF" />
+          <Text style={styles.uploadButtonText}>Escolher foto</Text>
+        </Pressable>
         <Pressable
           style={[styles.captureButton, !isCameraReady && styles.captureButtonDisabled]}
           onPress={onCapture}
@@ -224,12 +270,23 @@ function ResultStep({
   photoUri,
   recognizedText,
   setRecognizedText,
+  textSelection,
+  setTextSelection,
   errorMessage,
   onRetake,
   onConfirm,
   onClose,
 }: any) {
   const canConfirm = isValidOcrText(recognizedText) && !errorMessage;
+  const selectedText = recognizedText
+    .slice(Math.min(textSelection.start, textSelection.end), Math.max(textSelection.start, textSelection.end))
+    .trim();
+
+  function handleUseSelection() {
+    if (!selectedText) return;
+    setRecognizedText(selectedText);
+    setTextSelection({ start: 0, end: selectedText.length });
+  }
 
   return (
     <View style={[styles.resultContainer, { paddingTop: insets.top + 12 }]}>
@@ -260,9 +317,16 @@ function ResultStep({
             multiline
             value={recognizedText}
             onChangeText={setRecognizedText}
+            onSelectionChange={(event) => setTextSelection(event.nativeEvent.selection)}
             placeholder="Nenhum texto reconhecido"
             placeholderTextColor={colors.textMuted}
           />
+          {selectedText.length > 0 && selectedText.length < recognizedText.trim().length && (
+            <Pressable style={styles.selectionButton} onPress={handleUseSelection}>
+              <Ionicons name="text-outline" size={17} color={colors.primary} />
+              <Text style={styles.selectionButtonText}>Usar somente o texto selecionado</Text>
+            </Pressable>
+          )}
         </>
       )}
 
@@ -348,6 +412,21 @@ const createStyles = (colors: ThemeColors) =>
       left: 0,
       right: 0,
       alignItems: "center",
+      gap: 16,
+    },
+    uploadButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: 18,
+      backgroundColor: "rgba(0,0,0,0.45)",
+    },
+    uploadButtonText: {
+      color: "#FFFFFF",
+      fontSize: 13,
+      fontWeight: "700",
     },
     captureButton: {
       width: 76,
@@ -460,6 +539,22 @@ const createStyles = (colors: ThemeColors) =>
       flexDirection: "row",
       gap: 12,
       paddingVertical: 20,
+    },
+    selectionButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.primary,
+      paddingVertical: 10,
+      marginTop: 10,
+    },
+    selectionButtonText: {
+      color: colors.primary,
+      fontSize: 13,
+      fontWeight: "700",
     },
     secondaryButton: {
       flex: 1,

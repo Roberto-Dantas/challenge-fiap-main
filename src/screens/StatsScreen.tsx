@@ -87,10 +87,10 @@ export default function StatsScreen() {
           <View style={styles.chartCard}>
             <Text style={styles.totalLabel}>Porcentagem por matéria</Text>
             <View style={styles.miniChart}>
-              {perSubject.map((s) => {
+              {perSubject.map((s, subjectIndex) => {
                 const percent = s.total > 0 ? Math.round((s.reviewed / s.total) * 100) : 0;
                 return (
-                  <View key={s.id} style={styles.miniBarWrap}>
+                  <View key={`${s.id}-${subjectIndex}`} style={styles.miniBarWrap}>
                     <View style={[styles.miniBarFill, { height: `${percent}%` }]} />
                   </View>
                 );
@@ -100,7 +100,7 @@ export default function StatsScreen() {
         </View>
 
         <Text style={styles.sectionTitle}>Desempenho por matéria</Text>
-        {perSubjectExtended.map((s) => {
+        {perSubjectExtended.map((s, subjectIndex) => {
           const percent = s.total > 0 ? Math.round((s.reviewed / s.total) * 100) : 0;
           const reviews = s.totalReviews ?? 0;
           const corrects = s.ok ?? 0;
@@ -108,7 +108,7 @@ export default function StatsScreen() {
           const correctsWidth = Math.round((corrects / maxCompareValue) * 100);
 
           return (
-            <View key={s.id} style={styles.statCard}>
+            <View key={`${s.id}-${subjectIndex}`} style={styles.statCard}>
               <View style={styles.statLeft}>
                 <Text style={styles.statTitle}>{s.title}</Text>
                 <Text style={styles.statSubtitle}>{s.total} flashcards • {reviews} revisões</Text>
@@ -140,13 +140,13 @@ export default function StatsScreen() {
         {wrongBySubject.length === 0 ? (
           <Text style={styles.empty}>Nenhum flashcard marcado como errado</Text>
         ) : (
-          wrongBySubject.map((group) => {
+          wrongBySubject.map((group, groupIndex) => {
             const subject = subjects.find((s) => s.id === group.id);
             return (
-              <View key={group.id} style={{ marginBottom: 12 }}>
+              <View key={`${group.id}-${groupIndex}`} style={{ marginBottom: 12 }}>
                 <Text style={[styles.statTitle, { marginBottom: 8 }]}>{group.title}</Text>
-                {group.items.map((f: any) => (
-                  <View key={f.id} style={styles.reviewRow}>
+                {group.items.map((f: any, cardIndex: number) => (
+                  <View key={`${f.id}-${cardIndex}`} style={styles.reviewRow}>
                     <View style={[styles.reviewIcon, { backgroundColor: subject?.iconBackground || colors.background }]}>
                       <Ionicons name={subject?.icon as any || "document-text"} size={18} color={subject?.iconColor || colors.primary} />
                     </View>
