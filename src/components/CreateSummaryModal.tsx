@@ -3,7 +3,9 @@ import { useMemo, useState } from "react";
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { useSettings } from "../context/SettingsContext";
+import { generateLocalSummary } from "../services/localAiService";
 import { ThemeColors } from "../theme/colors";
+import ScanTextButton from "./ScanTextButton";
 
 interface CreateSummaryModalProps {
   visible: boolean;
@@ -16,6 +18,7 @@ export default function CreateSummaryModal({ visible, onClose, onCreate }: Creat
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
 
   function close() {
     setTitle("");
@@ -27,6 +30,17 @@ export default function CreateSummaryModal({ visible, onClose, onCreate }: Creat
     if (!title.trim() || !content.trim()) return;
     onCreate(title, content);
     close();
+  }
+
+  async function handleOcrText(text: string) {
+    setIsGenerating(true);
+    try {
+      const generated = await generateLocalSummary(text);
+      setTitle(generated.title);
+      setContent(generated.content);
+    } finally {
+      setIsGenerating(false);
+    }
   }
 
   return (
@@ -41,6 +55,12 @@ export default function CreateSummaryModal({ visible, onClose, onCreate }: Creat
             <Text style={styles.label}>Título</Text>
             <TextInput style={styles.input} value={title} onChangeText={setTitle} placeholder="Ex: Conceitos principais" placeholderTextColor={colors.textMuted} />
             <Text style={styles.label}>Resumo</Text>
+            <ScanTextButton
+              variant="compact"
+              label={isGenerating ? "Gerando..." : "Escanear e gerar com IA local"}
+              scannerTitle="Texto para resumir"
+              onTextExtracted={handleOcrText}
+            />
             <TextInput style={[styles.input, styles.largeInput]} value={content} onChangeText={setContent} multiline textAlignVertical="top" placeholder="Escreva os pontos mais importantes..." placeholderTextColor={colors.textMuted} />
             <Pressable style={[styles.button, (!title.trim() || !content.trim()) && styles.disabled]} onPress={create} disabled={!title.trim() || !content.trim()}>
               <Text style={styles.buttonText}>Salvar resumo</Text>

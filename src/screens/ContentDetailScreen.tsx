@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
 import { useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import CreateFlashcardModal from "../components/CreateFlashcardModal";
@@ -27,13 +27,16 @@ export default function ContentDetailScreen({ navigation, route }: Props) {
     getQuestionsByTopic,
     addFlashcard,
     addSummary,
+    deleteSummary,
     addQuestion,
+    deleteQuestion,
   } = useLibrary();
   const [activeTab, setActiveTab] = useState<ContentTab>("flashcards");
   const [searchQuery, setSearchQuery] = useState("");
   const [flashcardModalVisible, setFlashcardModalVisible] = useState(false);
   const [summaryModalVisible, setSummaryModalVisible] = useState(false);
   const [questionModalVisible, setQuestionModalVisible] = useState(false);
+  const [selectedSummaryId, setSelectedSummaryId] = useState<string | null>(null);
   const [quizQuestions, setQuizQuestions] = useState<Question[]>([]);
   const [quizIndex, setQuizIndex] = useState(0);
   const [quizScore, setQuizScore] = useState(0);
@@ -47,6 +50,7 @@ export default function ContentDetailScreen({ navigation, route }: Props) {
   const filteredFlashcards = flashcards.filter((card) => !query || card.front.toLowerCase().includes(query) || card.back.toLowerCase().includes(query));
   const filteredSummaries = summaries.filter((summary) => !query || summary.title.toLowerCase().includes(query) || summary.content.toLowerCase().includes(query));
   const filteredQuestions = questions.filter((question) => !query || question.prompt.toLowerCase().includes(query) || question.options.some((option) => option.toLowerCase().includes(query)));
+  const selectedSummary = summaries.find((summary) => summary.id === selectedSummaryId);
 
   function handleStartStudy(startIndex = 0, flashcardId?: string) {
     const dueCards = flashcards.filter((card) => card.nextReviewAt === undefined || card.nextReviewAt <= Date.now());
@@ -67,7 +71,35 @@ export default function ContentDetailScreen({ navigation, route }: Props) {
   }
 
   function renderSummaries() {
-    return filteredSummaries.length === 0 ? <EmptyState icon="document-text-outline" title="Nenhum resumo ainda" description="Organize as ideias principais deste conteúdo em um texto rápido de consultar." onPress={() => setSummaryModalVisible(true)} buttonLabel="Criar resumo" styles={styles} colors={colors} /> : <>{filteredSummaries.map((summary, summaryIndex) => <View key={`${summary.id}-${summaryIndex}`} style={styles.itemCard}><View style={[styles.itemIcon, { backgroundColor: colors.primary + "18" }]}><Ionicons name="document-text-outline" size={19} color={colors.primary} /></View><View style={styles.itemBody}><Text style={styles.itemTitle}>{summary.title}</Text><Text style={styles.itemDescription}>{summary.content}</Text></View></View>)}</>;
+    return filteredSummaries.length === 0 ? <EmptyState icon="document-text-outline" title="Nenhum resumo ainda" description="Organize as ideias principais deste conteúdo em um texto rápido de consultar." onPress={() => setSummaryModalVisible(true)} buttonLabel="Criar resumo" styles={styles} colors={colors} /> : <>{filteredSummaries.map((summary, summaryIndex) => <Pressable key={`${summary.id}-${summaryIndex}`} style={styles.itemCard} onPress={() => setSelectedSummaryId(summary.id)}><View style={[styles.itemIcon, { backgroundColor: colors.primary + "18" }]}><Ionicons name="document-text-outline" size={19} color={colors.primary} /></View><View style={styles.itemBody}><Text style={styles.itemTitle}>{summary.title}</Text><Text style={styles.itemDescription} numberOfLines={3}>{summary.content}</Text></View><Ionicons name="chevron-forward" size={18} color={colors.textMuted} /></Pressable>)}</>;
+  }
+
+  function confirmDeleteSummary(summaryId: string) {
+    Alert.alert("Excluir resumo?", "Esta ação não pode ser desfeita.", [
+      { text: "Cancelar", style: "cancel" },
+      { text: "Excluir", style: "destructive", onPress: () => { deleteSummary(summaryId); setSelectedSummaryId(null); } },
+    ]);
+  }
+
+  function confirmDeleteQuestion(questionId: string) {
+    Alert.alert("Excluir exercício?", "Esta ação não pode ser desfeita.", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Excluir",
+        style: "destructive",
+        onPress: () => {
+          deleteQuestion(questionId);
+          setQuizQuestions((current) => current.filter((question) => question.id !== questionId));
+          setSelectedAnswer(null);
+          if (quizQuestions.length <= 1) {
+            setQuizIndex(0);
+            setQuizFinished(false);
+          } else if (quizIndex >= quizQuestions.length - 1) {
+            setQuizIndex(quizQuestions.length - 2);
+          }
+        },
+      },
+    ]);
   }
 
   function shuffleQuestions(items: Question[]) {
@@ -106,7 +138,7 @@ export default function ContentDetailScreen({ navigation, route }: Props) {
     }
 
     if (quizQuestions.length === 0) {
-      return <View style={styles.quizStart}><Ionicons name="school-outline" size={54} color={colors.primary} /><Text style={styles.quizTitle}>Questionário</Text><Text style={styles.quizDescription}>{filteredQuestions.length} questão{filteredQuestions.length !== 1 ? "ões" : ""} disponível{filteredQuestions.length !== 1 ? "eis" : ""}. As perguntas serão embaralhadas.</Text><Pressable style={styles.quizButton} onPress={startQuiz}><Ionicons name="play" size={18} color={colors.white} /><Text style={styles.quizButtonText}>Iniciar questionário</Text></Pressable></View>;
+      return <Pressable style={styles.quizStart} onPress={startQuiz}><Ionicons name="school-outline" size={54} color={colors.primary} /><Text style={styles.quizTitle}>Questionário</Text><Text style={styles.quizDescription}>{filteredQuestions.length} questão{filteredQuestions.length !== 1 ? "ões" : ""} disponível{filteredQuestions.length !== 1 ? "eis" : ""}. As perguntas serão embaralhadas.</Text><View style={styles.quizButton}><Ionicons name="play" size={18} color={colors.white} /><Text style={styles.quizButtonText}>Abrir exercício</Text></View></Pressable>;
     }
 
     if (quizFinished) {
@@ -115,7 +147,7 @@ export default function ContentDetailScreen({ navigation, route }: Props) {
 
     const question = quizQuestions[quizIndex];
     const isCorrect = selectedAnswer === question.correctOption;
-      return <View><View style={styles.quizProgress}><Text style={styles.quizProgressText}>Questão {quizIndex + 1} de {quizQuestions.length}</Text><Text style={styles.quizProgressText}>Pontuação: {quizScore}</Text></View><View style={styles.questionCard}><Text style={styles.quizQuestion}>{question.prompt}</Text>{question.options.map((option, index) => { const isSelected = selectedAnswer === index; const isRight = index === question.correctOption; return <Pressable key={`${question.id}-${index}`} style={[styles.answerRow, isSelected && (isRight ? styles.correctAnswer : styles.wrongAnswer), selectedAnswer !== null && isRight && styles.correctAnswer]} onPress={() => answerQuestion(index)} disabled={selectedAnswer !== null}><Text style={styles.answerLabel}>{String.fromCharCode(65 + index)}</Text><Text style={styles.answerText}>{option}</Text>{selectedAnswer !== null && isRight && <Ionicons name="checkmark-circle" size={18} color={colors.primary} />}{isSelected && !isRight && <Ionicons name="close-circle" size={18} color={colors.danger} />}</Pressable>; })}{selectedAnswer !== null && <View style={[styles.feedbackBox, isCorrect ? styles.feedbackCorrect : styles.feedbackWrong]}><Text style={styles.feedbackTitle}>{isCorrect ? "Correto!" : "Incorreto"}</Text><Text style={styles.feedbackText}>{isCorrect ? "Boa resposta." : `A alternativa correta é ${String.fromCharCode(65 + question.correctOption)}.`}</Text>{question.explanation && <Text style={styles.feedbackText}>{question.explanation}</Text>}</View>}<Pressable style={[styles.quizButton, selectedAnswer === null && styles.disabledButton]} onPress={nextQuizQuestion} disabled={selectedAnswer === null}><Text style={styles.quizButtonText}>{quizIndex === quizQuestions.length - 1 ? "Ver resultado" : "Próxima questão"}</Text><Ionicons name="arrow-forward" size={18} color={colors.white} /></Pressable></View></View>;
+      return <View><View style={styles.quizProgress}><Text style={styles.quizProgressText}>Questão {quizIndex + 1} de {quizQuestions.length}</Text><Text style={styles.quizProgressText}>Pontuação: {quizScore}</Text></View><View style={styles.questionCard}><View style={styles.questionHeader}><Text style={[styles.quizQuestion, styles.questionHeaderText]}>{question.prompt}</Text><Pressable onPress={() => confirmDeleteQuestion(question.id)} hitSlop={8} accessibilityLabel="Excluir exercício"><Ionicons name="trash-outline" size={20} color={colors.danger} /></Pressable></View>{question.options.map((option, index) => { const isSelected = selectedAnswer === index; const isRight = index === question.correctOption; return <Pressable key={`${question.id}-${index}`} style={[styles.answerRow, isSelected && (isRight ? styles.correctAnswer : styles.wrongAnswer), selectedAnswer !== null && isRight && styles.correctAnswer]} onPress={() => answerQuestion(index)} disabled={selectedAnswer !== null}><Text style={styles.answerLabel}>{String.fromCharCode(65 + index)}</Text><Text style={styles.answerText}>{option}</Text>{selectedAnswer !== null && isRight && <Ionicons name="checkmark-circle" size={18} color={colors.primary} />}{isSelected && !isRight && <Ionicons name="close-circle" size={18} color={colors.danger} />}</Pressable>; })}{selectedAnswer !== null && <View style={[styles.feedbackBox, isCorrect ? styles.feedbackCorrect : styles.feedbackWrong]}><Text style={styles.feedbackTitle}>{isCorrect ? "Correto!" : "Incorreto"}</Text><Text style={styles.feedbackText}>{isCorrect ? "Boa resposta." : `A alternativa correta é ${String.fromCharCode(65 + question.correctOption)}.`}</Text>{question.explanation && <Text style={styles.feedbackText}>{question.explanation}</Text>}</View>}<Pressable style={[styles.quizButton, selectedAnswer === null && styles.disabledButton]} onPress={nextQuizQuestion} disabled={selectedAnswer === null}><Text style={styles.quizButtonText}>{quizIndex === quizQuestions.length - 1 ? "Ver resultado" : "Próxima questão"}</Text><Ionicons name="arrow-forward" size={18} color={colors.white} /></Pressable></View></View>;
   }
 
   const tabData: { key: ContentTab; label: string; icon: keyof typeof Ionicons.glyphMap; count: number }[] = [
@@ -139,6 +171,14 @@ export default function ContentDetailScreen({ navigation, route }: Props) {
       <CreateFlashcardModal visible={flashcardModalVisible} onClose={() => setFlashcardModalVisible(false)} onCreate={(front, back) => addFlashcard({ topicId, front, back })} />
       <CreateSummaryModal visible={summaryModalVisible} onClose={() => setSummaryModalVisible(false)} onCreate={(title, content) => addSummary({ topicId, title, content })} />
       <CreateQuestionModal visible={questionModalVisible} onClose={() => setQuestionModalVisible(false)} onCreate={(prompt, options, correctOption, explanation) => addQuestion({ topicId, prompt, options, correctOption, explanation })} />
+      <Modal visible={Boolean(selectedSummary)} animationType="slide" transparent onRequestClose={() => setSelectedSummaryId(null)}>
+        <View style={styles.summaryOverlay}>
+          <View style={styles.summaryModal}>
+            <View style={styles.summaryModalHeader}><Text style={styles.summaryModalTitle}>{selectedSummary?.title}</Text><View style={styles.summaryModalActions}><Pressable onPress={() => selectedSummary && confirmDeleteSummary(selectedSummary.id)} hitSlop={8} accessibilityLabel="Excluir resumo"><Ionicons name="trash-outline" size={21} color={colors.danger} /></Pressable><Pressable onPress={() => setSelectedSummaryId(null)} hitSlop={8}><Ionicons name="close" size={24} color={colors.textSecondary} /></Pressable></View></View>
+            <ScrollView showsVerticalScrollIndicator={false}><Text style={styles.summaryModalContent}>{selectedSummary?.content}</Text></ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -187,6 +227,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   emptyButtonText: { color: colors.white, fontSize: 14, fontWeight: "700" },
   questionCard: { backgroundColor: colors.cardBackground, borderColor: colors.border, borderRadius: 14, borderWidth: 1, marginBottom: 12, padding: 14 },
   questionHeader: { alignItems: "flex-start", flexDirection: "row", marginBottom: 12 },
+  questionHeaderText: { flex: 1, marginBottom: 0, marginRight: 12 },
   quizStart: { alignItems: "center", backgroundColor: colors.cardBackground, borderColor: colors.border, borderRadius: 16, borderWidth: 1, padding: 28 },
   quizTitle: { color: colors.text, fontSize: 21, fontWeight: "800", marginTop: 14, textAlign: "center" },
   quizDescription: { color: colors.textSecondary, fontSize: 14, lineHeight: 21, marginTop: 8, textAlign: "center" },
@@ -208,4 +249,10 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   feedbackText: { color: colors.textSecondary, fontSize: 13, lineHeight: 19, marginTop: 4 },
   disabledButton: { opacity: 0.45 },
   explanation: { color: colors.textSecondary, fontSize: 13, lineHeight: 19, marginTop: 12 },
+  summaryOverlay: { flex: 1, backgroundColor: "rgba(15, 23, 42, 0.45)", justifyContent: "flex-end" },
+  summaryModal: { backgroundColor: colors.cardBackground, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: "82%", padding: 24, paddingBottom: 32 },
+  summaryModalHeader: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", marginBottom: 20 },
+  summaryModalActions: { alignItems: "center", flexDirection: "row", gap: 18 },
+  summaryModalTitle: { color: colors.text, flex: 1, fontSize: 20, fontWeight: "800", marginRight: 12 },
+  summaryModalContent: { color: colors.textSecondary, fontSize: 16, lineHeight: 25, paddingBottom: 10 },
 });

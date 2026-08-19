@@ -3,7 +3,9 @@ import { useMemo, useState } from "react";
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { useSettings } from "../context/SettingsContext";
+import { generateLocalExercise } from "../services/localAiService";
 import { ThemeColors } from "../theme/colors";
+import ScanTextButton from "./ScanTextButton";
 
 interface CreateQuestionModalProps {
   visible: boolean;
@@ -20,6 +22,7 @@ export default function CreateQuestionModal({ visible, onClose, onCreate }: Crea
   const [options, setOptions] = useState(["", "", "", ""]);
   const [correctOption, setCorrectOption] = useState(0);
   const [explanation, setExplanation] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
 
   function close() {
     setPrompt("");
@@ -36,6 +39,19 @@ export default function CreateQuestionModal({ visible, onClose, onCreate }: Crea
     close();
   }
 
+  async function handleOcrText(text: string) {
+    setIsGenerating(true);
+    try {
+      const generated = await generateLocalExercise(text);
+      setPrompt(generated.prompt);
+      setOptions(generated.options);
+      setCorrectOption(generated.correctOption);
+      setExplanation(generated.explanation);
+    } finally {
+      setIsGenerating(false);
+    }
+  }
+
   const canCreate = prompt.trim().length > 0 && options.filter((option) => option.trim()).length >= 2 && Boolean(options[correctOption].trim());
 
   return (
@@ -48,6 +64,12 @@ export default function CreateQuestionModal({ visible, onClose, onCreate }: Crea
           </View>
           <ScrollView keyboardShouldPersistTaps="handled">
             <Text style={styles.label}>Enunciado</Text>
+            <ScanTextButton
+              variant="compact"
+              label={isGenerating ? "Gerando..." : "Escanear e gerar exercício"}
+              scannerTitle="Texto para criar exercício"
+              onTextExtracted={handleOcrText}
+            />
             <TextInput style={[styles.input, styles.prompt]} value={prompt} onChangeText={setPrompt} multiline textAlignVertical="top" placeholder="Digite a pergunta..." placeholderTextColor={colors.textMuted} />
             <Text style={styles.label}>Alternativas</Text>
             {options.map((option, index) => (

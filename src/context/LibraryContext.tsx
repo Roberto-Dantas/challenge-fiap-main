@@ -67,7 +67,9 @@ interface LibraryContextValue {
   updateFlashcard: (flashcardId: string, input: UpdateFlashcardInput) => void;
   deleteFlashcard: (flashcardId: string) => void;
   addSummary: (input: CreateSummaryInput) => void;
+  deleteSummary: (summaryId: string) => void;
   addQuestion: (input: CreateQuestionInput) => void;
+  deleteQuestion: (questionId: string) => void;
   markFlashcardReviewed: (flashcardId: string, difficulty: FlashcardDifficulty) => void;
   getFlashcardsByTopic: (topicId: string) => Flashcard[];
   getSummariesByTopic: (topicId: string) => Summary[];
@@ -280,6 +282,10 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     ]);
   }, []);
 
+  const deleteSummary = useCallback((summaryId: string) => {
+    setSummaries((current) => current.filter((summary) => summary.id !== summaryId));
+  }, []);
+
   const addQuestion = useCallback((input: CreateQuestionInput) => {
     const prompt = input.prompt.trim();
     const options = input.options.map((option) => option.trim()).filter(Boolean);
@@ -297,6 +303,10 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
         createdAt: new Date().toISOString(),
       },
     ]);
+  }, []);
+
+  const deleteQuestion = useCallback((questionId: string) => {
+    setQuestions((current) => current.filter((question) => question.id !== questionId));
   }, []);
 
   const markFlashcardReviewed = useCallback(
@@ -376,7 +386,9 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       updateFlashcard,
       deleteFlashcard,
       addSummary,
+      deleteSummary,
       addQuestion,
+      deleteQuestion,
       markFlashcardReviewed,
       getFlashcardsByTopic,
       getSummariesByTopic,
@@ -384,7 +396,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       getDueFlashcards,
       refreshLibrary,
     }),
-    [subjects, flashcards, summaries, questions, addSubject, deleteSubject, addTopic, addFlashcard, updateFlashcard, deleteFlashcard, addSummary, addQuestion, markFlashcardReviewed, getFlashcardsByTopic, getSummariesByTopic, getQuestionsByTopic, getDueFlashcards, refreshLibrary],
+    [subjects, flashcards, summaries, questions, addSubject, deleteSubject, addTopic, addFlashcard, updateFlashcard, deleteFlashcard, addSummary, deleteSummary, addQuestion, deleteQuestion, markFlashcardReviewed, getFlashcardsByTopic, getSummariesByTopic, getQuestionsByTopic, getDueFlashcards, refreshLibrary],
   );
 
   if (isAuthLoading || (userKey !== null && !isHydrated)) {
