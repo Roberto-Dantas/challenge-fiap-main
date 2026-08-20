@@ -43,6 +43,9 @@ const DEFAULT_STATE: SettingsState = {
   monthlyGoal: 600,
 };
 
+const MAX_DAILY_GOAL = 1000;
+const MAX_MONTHLY_GOAL = 100000;
+
 const SettingsContext = createContext<SettingsContextValue | null>(null);
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
@@ -84,12 +87,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   );
 
   const setDailyGoal = useCallback(
-    (value: number) => persist({ ...state, dailyGoal: Math.max(1, Math.round(value)) }),
+    (value: number) => persist({ ...state, dailyGoal: Math.min(MAX_DAILY_GOAL, Math.max(1, Math.round(value))) }),
     [state, persist],
   );
 
   const setMonthlyGoal = useCallback(
-    (value: number) => persist({ ...state, monthlyGoal: Math.max(1, Math.round(value)) }),
+    (value: number) => persist({ ...state, monthlyGoal: Math.min(MAX_MONTHLY_GOAL, Math.max(1, Math.round(value))) }),
     [state, persist],
   );
 

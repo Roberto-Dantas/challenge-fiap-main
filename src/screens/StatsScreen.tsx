@@ -7,6 +7,7 @@ import { useLibrary } from "../context/LibraryContext";
 import { useSettings } from "../context/SettingsContext";
 import { ThemeColors } from "../theme/colors";
 import { getCurrentStreak, getLongestStreak, getRecentActivity, getReviewAccuracy } from "../utils/studyMetrics";
+import { getSubjectIcon } from "../utils/icons";
 import Reveal from "../components/Reveal";
 
 export default function StatsScreen() {
@@ -176,7 +177,7 @@ export default function StatsScreen() {
                 {group.items.map((f: any, cardIndex: number) => (
                   <View key={`${f.id}-${cardIndex}`} style={styles.reviewRow}>
                     <View style={[styles.reviewIcon, { backgroundColor: subject?.iconBackground || colors.background }]}>
-                      <Ionicons name={subject?.icon as any || "document-text"} size={18} color={subject?.iconColor || colors.primary} />
+                      {getSubjectIcon(subject?.icon ?? "default", 18, subject?.iconColor || colors.primary)}
                     </View>
                     <View style={styles.reviewInfo}>
                       <Text style={styles.reviewTitle} numberOfLines={1}>{f.front}</Text>

@@ -19,6 +19,10 @@ import { AccountStackParamList } from "../../types";
 
 type Props = NativeStackScreenProps<AccountStackParamList, "EditProfile">;
 
+const MAX_NAME_LENGTH = 80;
+const MAX_EMAIL_LENGTH = 254;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
 export default function EditProfileScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const { user, updateProfile } = useAuth();
@@ -30,11 +34,16 @@ export default function EditProfileScreen({ navigation }: Props) {
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
-    const trimmedName = name.trim();
-    const trimmedEmail = email.trim();
+    const trimmedName = name.trim().slice(0, MAX_NAME_LENGTH);
+    const trimmedEmail = email.trim().slice(0, MAX_EMAIL_LENGTH).toLowerCase();
 
     if (!trimmedName || !trimmedEmail) {
       Alert.alert("Campos obrigatórios", "Preencha nome e email para continuar.");
+      return;
+    }
+
+    if (!EMAIL_PATTERN.test(trimmedEmail)) {
+      Alert.alert("Email inválido", "Digite um email válido, como nome@exemplo.com.");
       return;
     }
 
@@ -79,6 +88,7 @@ export default function EditProfileScreen({ navigation }: Props) {
               placeholderTextColor={colors.textMuted}
               value={name}
               onChangeText={setName}
+              maxLength={MAX_NAME_LENGTH}
             />
           </View>
         </View>
@@ -95,6 +105,7 @@ export default function EditProfileScreen({ navigation }: Props) {
               autoCapitalize="none"
               value={email}
               onChangeText={setEmail}
+              maxLength={MAX_EMAIL_LENGTH}
             />
           </View>
         </View>

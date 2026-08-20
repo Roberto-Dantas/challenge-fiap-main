@@ -15,6 +15,9 @@ const themeOptions: { key: ThemeMode; label: string; icon: keyof typeof Ionicons
   { key: "dark", label: "Escuro", icon: "moon-outline" },
 ];
 
+const MAX_DAILY_GOAL = 1000;
+const MAX_MONTHLY_GOAL = 100000;
+
 export default function SettingsScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const {
@@ -36,10 +39,11 @@ export default function SettingsScreen({ navigation }: Props) {
   }, [dailyGoal, goalPeriod, monthlyGoal]);
 
   function handleGoalChange(value: string) {
-    const numericValue = value.replace(/[^0-9]/g, "");
+    const limit = goalPeriod === "daily" ? MAX_DAILY_GOAL : MAX_MONTHLY_GOAL;
+    const numericValue = value.replace(/[^0-9]/g, "").replace(/^0+(?=\d)/, "").slice(0, String(limit).length);
     setGoalValue(numericValue);
     const parsedValue = Number(numericValue);
-    if (!Number.isNaN(parsedValue) && parsedValue > 0) {
+    if (Number.isSafeInteger(parsedValue) && parsedValue > 0) {
       if (goalPeriod === "daily") setDailyGoal(parsedValue);
       else setMonthlyGoal(parsedValue);
     }

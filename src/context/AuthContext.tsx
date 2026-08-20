@@ -31,6 +31,9 @@ const DEFAULT_GUEST_USER: UserProfile = {
   email: "convidado@notez.app",
 };
 
+const MAX_NAME_LENGTH = 80;
+const MAX_EMAIL_LENGTH = 254;
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -87,7 +90,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const updateProfile = useCallback(
     async (data: Partial<UserProfile>) => {
       if (!user) return;
-      await persistUser({ ...user, ...data });
+      await persistUser({
+        ...user,
+        ...data,
+        name: data.name === undefined ? user.name : data.name.trim().slice(0, MAX_NAME_LENGTH),
+        email: data.email === undefined ? user.email : data.email.trim().slice(0, MAX_EMAIL_LENGTH).toLowerCase(),
+      });
     },
     [user, persistUser],
   );

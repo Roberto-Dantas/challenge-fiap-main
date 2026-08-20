@@ -50,6 +50,11 @@ interface CreateSummaryInput {
   content: string;
 }
 
+interface UpdateSummaryInput {
+  title: string;
+  content: string;
+}
+
 interface CreateQuestionInput {
   topicId: string;
   prompt: string;
@@ -72,6 +77,7 @@ interface LibraryContextValue {
   updateFlashcard: (flashcardId: string, input: UpdateFlashcardInput) => void;
   deleteFlashcard: (flashcardId: string) => void;
   addSummary: (input: CreateSummaryInput) => void;
+  updateSummary: (summaryId: string, input: UpdateSummaryInput) => void;
   deleteSummary: (summaryId: string) => void;
   addQuestion: (input: CreateQuestionInput) => void;
   deleteQuestion: (questionId: string) => void;
@@ -305,6 +311,13 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     setSummaries((current) => current.filter((summary) => summary.id !== summaryId));
   }, []);
 
+  const updateSummary = useCallback((summaryId: string, input: UpdateSummaryInput) => {
+    const title = input.title.trim().slice(0, MAX_TITLE_LENGTH);
+    const content = input.content.trim();
+    if (!title || !content) return;
+    setSummaries((current) => current.map((summary) => summary.id === summaryId ? { ...summary, title, content } : summary));
+  }, []);
+
   const addQuestion = useCallback((input: CreateQuestionInput) => {
     const prompt = input.prompt.trim();
     const options = input.options.map((option) => option.trim()).filter(Boolean);
@@ -427,6 +440,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       updateFlashcard,
       deleteFlashcard,
       addSummary,
+      updateSummary,
       deleteSummary,
       addQuestion,
       deleteQuestion,

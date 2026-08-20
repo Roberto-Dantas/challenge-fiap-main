@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { useSettings } from "../context/SettingsContext";
@@ -12,14 +12,24 @@ interface CreateSummaryModalProps {
   visible: boolean;
   onClose: () => void;
   onCreate: (title: string, content: string) => void;
+  initialTitle?: string;
+  initialContent?: string;
+  heading?: string;
 }
 
-export default function CreateSummaryModal({ visible, onClose, onCreate }: CreateSummaryModalProps) {
+export default function CreateSummaryModal({ visible, onClose, onCreate, initialTitle = "", initialContent = "", heading = "Novo resumo" }: CreateSummaryModalProps) {
   const { colors } = useSettings();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
+  const [title, setTitle] = useState(initialTitle);
+  const [content, setContent] = useState(initialContent);
   const [isGenerating, setIsGenerating] = useState(false);
+
+  useEffect(() => {
+    if (visible) {
+      setTitle(initialTitle);
+      setContent(initialContent);
+    }
+  }, [initialContent, initialTitle, visible]);
 
   function close() {
     setTitle("");
@@ -49,7 +59,7 @@ export default function CreateSummaryModal({ visible, onClose, onCreate }: Creat
       <View style={styles.overlay}>
         <View style={styles.container}>
           <View style={styles.header}>
-            <Text style={styles.heading}>Novo resumo</Text>
+            <Text style={styles.heading}>{heading}</Text>
             <Pressable onPress={close} hitSlop={8}><Ionicons name="close" size={24} color={colors.textSecondary} /></Pressable>
           </View>
           <ScrollView keyboardShouldPersistTaps="handled">

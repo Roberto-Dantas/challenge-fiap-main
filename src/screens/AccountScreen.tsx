@@ -71,16 +71,16 @@ export default function AccountScreen({ navigation }: Props) {
   const sections = useMemo<{ title: string; data: MenuItem[] }[]>(
     () => [
       {
-        title: "Conta",
+        title: "Perfil e privacidade",
         data: [
           { label: "Editar Perfil", icon: "person-circle-outline", onPress: () => navigation.navigate("EditProfile") },
-          { label: "Geral", icon: "options-outline", onPress: () => navigation.navigate("Settings") },
           { label: "Privacidade", icon: "lock-closed-outline", onPress: () => navigation.navigate("Privacy") },
         ],
       },
       {
-        title: "Geral",
+        title: "Outros",
         data: [
+          { label: "Preferências", icon: "options-outline", onPress: () => navigation.navigate("Settings") },
           { label: "Ajuda e Suporte", icon: "help-circle-outline", onPress: () => navigation.navigate("Help") },
           { label: loggingOut ? "Saindo..." : "Sair", icon: "exit-outline", destructive: true, onPress: handleLogout },
         ],

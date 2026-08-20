@@ -27,7 +27,7 @@ import { ThemeColors } from "../theme/colors";
 type Props = NativeStackScreenProps<LibraryStackParamList, "LibraryMain">;
 
 type SortOption = "alphabetical" | "progress" | "due";
-type FilterOption = "all" | "due" | "reviewed" | "notReviewed";
+type FilterOption = "all" | "due" | "reviewed" | "notReviewed" | "noTopics" | "fewTopics" | "manyTopics";
 type SubjectWithStats = Subject & {
   reviewedCount: number;
   dueCount: number;
@@ -46,6 +46,7 @@ export default function LibraryScreen({ navigation, route }: Props) {
   const [modalVisible, setModalVisible] = useState(false);
   const [topicModalSubjectId, setTopicModalSubjectId] = useState<string | null>(null);
   const [sortOption, setSortOption] = useState<SortOption>("due");
+  const [alphabeticalDescending, setAlphabeticalDescending] = useState(false);
   const [filterOption, setFilterOption] = useState<FilterOption>("all");
   const [showFilters, setShowFilters] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -150,12 +151,15 @@ export default function LibraryScreen({ navigation, route }: Props) {
       if (filterOption === "due") return subject.dueCount > 0;
       if (filterOption === "reviewed") return subject.subjectFlashcards.length > 0 && subject.reviewedCount === subject.subjectFlashcards.length;
       if (filterOption === "notReviewed") return subject.unreviewedCount > 0;
+      if (filterOption === "noTopics") return subject.topics.length === 0;
+      if (filterOption === "fewTopics") return subject.topics.length >= 1 && subject.topics.length <= 3;
+      if (filterOption === "manyTopics") return subject.topics.length >= 4;
       return true;
     });
 
     const sorted = [...items];
     if (sortOption === "alphabetical") {
-      sorted.sort((a, b) => a.title.localeCompare(b.title));
+      sorted.sort((a, b) => (alphabeticalDescending ? b.title.localeCompare(a.title) : a.title.localeCompare(b.title)));
     } else if (sortOption === "progress") {
       sorted.sort((a, b) => b.progress - a.progress);
     } else {
@@ -163,7 +167,7 @@ export default function LibraryScreen({ navigation, route }: Props) {
     }
 
     return sorted;
-  }, [searchQuery, subjectsWithStats, filterOption, sortOption]);
+  }, [alphabeticalDescending, searchQuery, subjectsWithStats, filterOption, sortOption]);
 
   const subjectCountLabel =
     filteredSubjects.length === 1
@@ -287,6 +291,9 @@ export default function LibraryScreen({ navigation, route }: Props) {
           { key: "due", label: "Agendados" },
           { key: "reviewed", label: "Revisados" },
           { key: "notReviewed", label: "Não revisados" },
+          { key: "noTopics", label: "Sem tópicos" },
+          { key: "fewTopics", label: "1–3 tópicos" },
+          { key: "manyTopics", label: "4+ tópicos" },
         ] as const).map((option) => (
           <Pressable
             key={option.key}
@@ -333,7 +340,14 @@ export default function LibraryScreen({ navigation, route }: Props) {
               styles.sortButton,
               sortOption === option.key && styles.sortButtonActive,
             ]}
-            onPress={() => setSortOption(option.key)}
+            onPress={() => {
+              if (option.key === "alphabetical" && sortOption === "alphabetical") {
+                setAlphabeticalDescending((current) => !current);
+              } else {
+                setSortOption(option.key);
+                if (option.key !== "alphabetical") setAlphabeticalDescending(false);
+              }
+            }}
           >
             <Text
               style={[
@@ -341,7 +355,7 @@ export default function LibraryScreen({ navigation, route }: Props) {
                 sortOption === option.key && styles.sortButtonTextActive,
               ]}
             >
-              {option.label}
+              {option.key === "alphabetical" && sortOption === "alphabetical" ? (alphabeticalDescending ? "Z-A" : "A-Z") : option.label}
             </Text>
           </Pressable>
         ))}

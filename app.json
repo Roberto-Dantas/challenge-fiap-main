@@ -56,8 +56,7 @@
           }
         }
       ],
-      "expo-font",
-      "expo-sharing"
+      "expo-font"
     ],
     "extra": {
       "eas": {

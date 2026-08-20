@@ -29,7 +29,7 @@ export function getSubjectIcon(
     case "dna":
       return <MaterialCommunityIcons name="dna" size={size} color={color} />;
     default:
-      return <Ionicons name="folder" size={size} color={color} />;
+      return <Ionicons name="help-circle-outline" size={size} color={color} />;
   }
 }
 

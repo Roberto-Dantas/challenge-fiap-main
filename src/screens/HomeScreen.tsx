@@ -20,6 +20,7 @@ import Reveal from "../components/Reveal";
 import { AnimatedMotiView } from "../components/AnimatedMotiView";
 
 import { useLibrary } from "../context/LibraryContext";
+import { useAuth } from "../context/AuthContext";
 import { useSettings } from "../context/SettingsContext";
 import { RootTabParamList } from "../types";
 import { ThemeColors } from "../theme/colors";
@@ -42,6 +43,7 @@ type SearchResult = {
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<BottomTabNavigationProp<RootTabParamList>>();
+  const { user } = useAuth();
   const { subjects, flashcards, getDueFlashcards, getFlashcardsByTopic, getReviewHistory, refreshLibrary } = useLibrary();
   const { colors, theme, setTheme, dailyGoal } = useSettings();
   const styles = useMemo(() => useMemoStyles(colors), [colors]);
@@ -50,6 +52,7 @@ export default function HomeScreen() {
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [showDueModal, setShowDueModal] = useState(false);
   const [showPerformanceModal, setShowPerformanceModal] = useState(false);
+  const [showNotificationsModal, setShowNotificationsModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [scanRequest, setScanRequest] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
@@ -60,6 +63,7 @@ export default function HomeScreen() {
       setSelectedSubject(null);
       setShowDueModal(false);
       setShowPerformanceModal(false);
+      setShowNotificationsModal(false);
       setScannedText(null);
       setSearchQuery("");
     }, []),
@@ -194,6 +198,24 @@ export default function HomeScreen() {
     [subjects, flashcards],
   );
 
+  const monthlyImprovement = useMemo(() => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    const previousDate = new Date(currentYear, currentMonth - 1, 1);
+    const getAccuracy = (year: number, month: number) => {
+      const monthReviews = reviewHistory.filter((review) => {
+        const date = new Date(review.reviewedAt);
+        return date.getFullYear() === year && date.getMonth() === month;
+      });
+      if (monthReviews.length === 0) return null;
+      return Math.round((monthReviews.filter((review) => review.difficulty !== "hard").length / monthReviews.length) * 100);
+    };
+    const current = getAccuracy(currentYear, currentMonth);
+    const previous = getAccuracy(previousDate.getFullYear(), previousDate.getMonth());
+    return current !== null && previous !== null ? current - previous : null;
+  }, [reviewHistory]);
+
   const recentTopics = useMemo(() => {
     const topicsWithStudy = subjects
       .flatMap((subject) =>
@@ -260,11 +282,11 @@ export default function HomeScreen() {
           <View style={styles.topActions}>
             <Pressable
               style={[styles.themeButton, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}
-              onPress={handleRefresh}
+              onPress={() => setShowNotificationsModal(true)}
               hitSlop={8}
-              accessibilityLabel="Atualizar página"
+              accessibilityLabel="Ver melhorias"
             >
-              {refreshing ? <ActivityIndicator size="small" color={colors.primary} /> : <Ionicons name="notifications-outline" size={20} color={colors.textSecondary} />}
+              <Ionicons name="notifications-outline" size={20} color={colors.textSecondary} />
             </Pressable>
             <Pressable
               style={[styles.themeButton, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}
@@ -275,7 +297,7 @@ export default function HomeScreen() {
               <Ionicons name={mode === "dark" ? "sunny-outline" : "moon-outline"} size={20} color={colors.text} />
             </Pressable>
             <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-              <Text style={[styles.avatarText, { color: colors.white }]}>M</Text>
+              <Text style={[styles.avatarText, { color: colors.white }]}>{(user?.name ?? "Convidado").trim().charAt(0).toUpperCase()}</Text>
             </View>
           </View>
         </View>
@@ -572,7 +594,9 @@ export default function HomeScreen() {
                 </Pressable>
               </View>
 
-              {subjectPerformance.map((subject, subjectIndex) => (
+              {subjectPerformance.length === 0 ? (
+                <View style={styles.emptyPerformance}><Ionicons name="bar-chart-outline" size={32} color={colors.primary} /><Text style={[styles.modalItemTitle, { color: colors.text }]}>Nenhuma matéria para exibir</Text><Text style={[styles.modalItemText, { color: colors.textSecondary }]}>Crie uma matéria e adicione flashcards para acompanhar seu desempenho.</Text><Pressable style={[styles.onboardingButton, { backgroundColor: colors.primary }]} onPress={() => { setShowPerformanceModal(false); navigation.navigate("Biblioteca"); }}><Text style={[styles.onboardingButtonText, { color: colors.white }]}>Abrir Biblioteca</Text></Pressable></View>
+              ) : subjectPerformance.map((subject, subjectIndex) => (
                 <View key={`${subject.id}-${subjectIndex}`} style={[styles.performanceItem, { backgroundColor: colors.surface, borderColor: colors.border }]}> 
                   <View style={styles.performanceHeader}>
                     <Text style={[styles.modalItemTitle, { color: colors.text }]}>{subject.title}</Text>
@@ -585,6 +609,15 @@ export default function HomeScreen() {
                   </View>
                 </View>
               ))}
+            </View>
+          </View>
+        </Modal>
+
+        <Modal visible={showNotificationsModal} transparent animationType="slide" onRequestClose={() => setShowNotificationsModal(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContainer, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}> 
+              <View style={styles.modalHeader}><Text style={[styles.modalTitle, { color: colors.text }]}>Suas melhorias</Text><Pressable onPress={() => setShowNotificationsModal(false)} hitSlop={8}><Ionicons name="close" size={20} color={colors.textSecondary} /></Pressable></View>
+              {monthlyImprovement === null ? <View style={styles.emptyPerformance}><Ionicons name="trending-up-outline" size={32} color={colors.primary} /><Text style={[styles.modalItemTitle, { color: colors.text }]}>Ainda não há comparação mensal</Text><Text style={[styles.modalItemText, { color: colors.textSecondary }]}>Continue revisando para comparar sua precisão com o mês anterior.</Text></View> : <View style={[styles.performanceItem, { backgroundColor: colors.surface, borderColor: colors.border }]}><Ionicons name={monthlyImprovement >= 0 ? "trending-up" : "trending-down"} size={28} color={monthlyImprovement >= 0 ? colors.primary : colors.danger} /><Text style={[styles.modalItemTitle, { color: colors.text }]}>{monthlyImprovement >= 0 ? "Parabéns!" : "Continue praticando!"}</Text><Text style={[styles.modalItemText, { color: colors.textSecondary }]}>Sua precisão {monthlyImprovement >= 0 ? "melhorou" : "variou"} {Math.abs(monthlyImprovement)}% em relação ao mês anterior.</Text></View>}
             </View>
           </View>
         </Modal>
@@ -1030,6 +1063,10 @@ const useMemoStyles = (colors: ThemeColors) =>
       borderWidth: 1,
       padding: 16,
       marginBottom: 12,
+    },
+    emptyPerformance: {
+      alignItems: "center",
+      paddingVertical: 24,
     },
     performanceHeader: {
       flexDirection: "row",
