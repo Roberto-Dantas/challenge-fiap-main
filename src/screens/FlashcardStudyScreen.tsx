@@ -2,10 +2,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useMemo, useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import CreateFlashcardModal from "../components/CreateFlashcardModal";
+import Reveal from "../components/Reveal";
+import { AnimatedMotiView } from "../components/AnimatedMotiView";
 import { useLibrary } from "../context/LibraryContext";
 import { useSettings } from "../context/SettingsContext";
 import { FlashcardDifficulty, LibraryStackParamList } from "../types";
@@ -25,6 +27,7 @@ export default function FlashcardStudyScreen({ navigation, route }: Props) {
     startIndex = 0,
     flashcardId,
     reviewOnlyUnreviewed,
+    reviewMode = reviewOnlyUnreviewed ? "new" : "all",
   } = route.params;
   const {
     getFlashcardsByTopic,
@@ -35,10 +38,13 @@ export default function FlashcardStudyScreen({ navigation, route }: Props) {
 
   const allTopicFlashcards = getFlashcardsByTopic(topicId);
   const flashcards = useMemo(
-    () => reviewOnlyUnreviewed
-      ? allTopicFlashcards.filter((card) => !card.reviewed)
-      : allTopicFlashcards,
-    [allTopicFlashcards, reviewOnlyUnreviewed],
+    () => {
+      if (reviewMode === "new") return allTopicFlashcards.filter((card) => !card.reviewed);
+      if (reviewMode === "due") return allTopicFlashcards.filter((card) => card.nextReviewAt === undefined || card.nextReviewAt <= Date.now());
+      if (reviewMode === "hard") return allTopicFlashcards.filter((card) => card.difficulty === "hard");
+      return allTopicFlashcards;
+    },
+    [allTopicFlashcards, reviewMode],
   );
   const selectedIndex = flashcardId
     ? flashcards.findIndex((card) => card.id === flashcardId)
@@ -64,7 +70,7 @@ export default function FlashcardStudyScreen({ navigation, route }: Props) {
     setCurrentIndex(nextIndex >= 0 ? nextIndex : 0);
     setShowBack(false);
     setStudyComplete(false);
-  }, [flashcardId, reviewOnlyUnreviewed, startIndex]);
+  }, [flashcardId, reviewMode, startIndex]);
 
   const total = flashcards.length;
   const safeIndex = total > 0 ? Math.min(Math.max(currentIndex, 0), total - 1) : 0;
@@ -106,20 +112,23 @@ export default function FlashcardStudyScreen({ navigation, route }: Props) {
 
   function handleDelete() {
     if (!currentCard) return;
+    const removeCurrentCard = () => {
+      deleteFlashcard(currentCard.id);
+      if (total <= 1) {
+        navigation.goBack();
+      } else {
+        setCurrentIndex(Math.min(safeIndex, total - 2));
+      }
+    };
+
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      if (window.confirm("Apagar flashcard? Esta ação não pode ser desfeita.")) removeCurrentCard();
+      return;
+    }
+
     Alert.alert("Apagar flashcard?", "Esta ação não pode ser desfeita.", [
       { text: "Cancelar", style: "cancel" },
-      {
-        text: "Apagar",
-        style: "destructive",
-        onPress: () => {
-          deleteFlashcard(currentCard.id);
-          if (total <= 1) {
-            handleBackToContent();
-          } else {
-            setCurrentIndex(Math.min(safeIndex, total - 2));
-          }
-        },
-      },
+      { text: "Apagar", style: "destructive", onPress: removeCurrentCard },
     ]);
   }
 
@@ -169,12 +178,14 @@ export default function FlashcardStudyScreen({ navigation, route }: Props) {
         </View>
       </View>
 
-      <View style={styles.progressSection}><View style={styles.progressRow}><Text style={styles.progressText}>{safeIndex + 1} de {total}</Text><Text style={styles.progressText}>{Math.round(progress * 100)}%</Text></View><View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${progress * 100}%` }]} /></View></View>
+      <View style={styles.progressSection}><View style={styles.progressRow}><Text style={styles.progressText}>{safeIndex + 1} de {total}</Text><Text style={styles.progressText}>{Math.round(progress * 100)}%</Text></View><View style={styles.progressTrack}><AnimatedMotiView animate={{ width: `${progress * 100}%` }} transition={{ type: "spring", damping: 16, stiffness: 130 }} style={styles.progressFill}><AnimatedMotiView from={{ opacity: 0.2 }} animate={{ opacity: 0.8 }} transition={{ type: "timing", duration: 900, loop: true }} style={styles.progressGlow} /></AnimatedMotiView></View></View>
 
-      <Pressable style={styles.card} onPress={() => setShowBack((value) => !value)}>
-        <Text style={styles.cardText}>{cardText}</Text>
-        <Text style={styles.flipHint}>{showBack ? "Toque para ver a pergunta" : "Toque para ver a resposta"}</Text>
-      </Pressable>
+      <Reveal key={`${currentCard.id}-${showBack ? "back" : "front"}`} style={styles.cardReveal}>
+        <Pressable style={styles.card} onPress={() => setShowBack((value) => !value)}>
+          <Text style={styles.cardText}>{cardText}</Text>
+          <Text style={styles.flipHint}>{showBack ? "Toque para ver a pergunta" : "Toque para ver a resposta"}</Text>
+        </Pressable>
+      </Reveal>
 
       <View style={styles.controls}>
         <Pressable style={[styles.circleButton, safeIndex === 0 && styles.disabled]} onPress={() => moveTo(safeIndex - 1)} disabled={safeIndex === 0} accessibilityLabel="Flashcard anterior"><Ionicons name="chevron-back" size={22} color={colors.white} /></Pressable>
@@ -201,7 +212,9 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   progressText: { color: "rgba(255,255,255,0.9)", fontSize: 13 },
   progressTrack: { backgroundColor: "rgba(255,255,255,0.25)", borderRadius: 3, height: 5, overflow: "hidden" },
   progressFill: { backgroundColor: colors.white, borderRadius: 3, height: "100%" },
-  card: { flex: 1, alignItems: "center", backgroundColor: "#3B82F6", borderColor: "rgba(255,255,255,0.2)", borderRadius: 28, borderWidth: 1, justifyContent: "center", marginBottom: 24, padding: 28 },
+  progressGlow: { backgroundColor: "rgba(255,255,255,0.85)", height: "100%", width: 26 },
+  card: { flex: 1, alignItems: "center", backgroundColor: "#3B82F6", borderColor: "rgba(255,255,255,0.2)", borderRadius: 28, borderWidth: 1, justifyContent: "center", padding: 28 },
+  cardReveal: { flex: 1, marginBottom: 24 },
   cardText: { color: colors.white, fontSize: 23, fontWeight: "600", lineHeight: 33, textAlign: "center" },
   flipHint: { bottom: 22, color: "rgba(255,255,255,0.7)", fontSize: 12, position: "absolute" },
   controls: { alignItems: "center", flexDirection: "row", gap: 12, justifyContent: "center" },

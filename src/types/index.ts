@@ -1,4 +1,5 @@
 export type ContentViewMode = "flashcard" | "exercicios" | "resumos";
+export const MAX_TITLE_LENGTH = 25;
 
 export type SubjectIcon =
   | "calculator"
@@ -27,6 +28,21 @@ export interface Flashcard {
   difficulty: FlashcardDifficulty;
   nextReviewAt?: number;
   reviewNotificationId?: string;
+}
+export interface ReviewRecord {
+  id: string;
+  flashcardId: string;
+  topicId: string;
+  difficulty: FlashcardDifficulty;
+  reviewedAt: number;
+}
+
+export interface QuizAttempt {
+  id: string;
+  topicId: string;
+  score: number;
+  total: number;
+  completedAt: number;
 }
 
 export interface Summary {
@@ -78,19 +94,20 @@ export type LibraryStackParamList = {
     startIndex?: number;
     flashcardId?: string;
     reviewOnlyUnreviewed?: boolean;
+    reviewMode?: "new" | "due" | "hard" | "all";
   };
 };
 
 export type RootTabParamList = {
   Home: undefined;
   Biblioteca: undefined;
+  Estatísticas: undefined;
   Conta: undefined;
 };
 
 export type RootStackParamList = {
   Login: undefined;
   Main: undefined;
-  Stats: undefined;
 };
 
 export interface UserProfile {

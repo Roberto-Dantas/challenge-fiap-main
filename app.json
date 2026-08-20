@@ -55,7 +55,9 @@
             "deploymentTarget": "16.4"
           }
         }
-      ]
+      ],
+      "expo-font",
+      "expo-sharing"
     ],
     "extra": {
       "eas": {

@@ -4,6 +4,7 @@ import { Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-nativ
 
 import { useSettings } from "../context/SettingsContext";
 import { ThemeColors } from "../theme/colors";
+import { MAX_TITLE_LENGTH } from "../types";
 
 interface CreateTopicModalProps {
   visible: boolean;
@@ -46,9 +47,11 @@ export default function CreateTopicModal({ visible, onClose, onCreate }: CreateT
             placeholderTextColor={colors.textMuted}
             value={title}
             onChangeText={setTitle}
+            maxLength={MAX_TITLE_LENGTH}
             onSubmitEditing={create}
             returnKeyType="done"
           />
+          <Text style={styles.characterCount}>{title.length}/{MAX_TITLE_LENGTH}</Text>
           <Pressable
             style={[styles.button, !title.trim() && styles.buttonDisabled]}
             onPress={create}
@@ -79,4 +82,5 @@ const createStyles = (colors: ThemeColors) =>
     button: { alignItems: "center", backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 14 },
     buttonDisabled: { opacity: 0.5 },
     buttonText: { color: colors.white, fontSize: 15, fontWeight: "700" },
+    characterCount: { color: colors.textMuted, fontSize: 11, marginBottom: 8, marginTop: -8, textAlign: "right" },
   });

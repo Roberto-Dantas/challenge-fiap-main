@@ -1,9 +1,11 @@
 import * as FileSystem from "expo-file-system/legacy";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { Flashcard, Question, Subject, Summary } from "../types";
+import { Flashcard, MAX_TITLE_LENGTH, Question, QuizAttempt, ReviewRecord, Subject, Summary } from "../types";
 
-const STORAGE_VERSION = 3;
+const STORAGE_VERSION = 4;
 const LIBRARY_DIRECTORY = "notez-library";
+const LIBRARY_STORAGE_PREFIX = "@notez/library/";
 const saveQueues = new Map<string, Promise<void>>();
 
 export interface StoredLibrary {
@@ -13,6 +15,8 @@ export interface StoredLibrary {
   flashcards: Flashcard[];
   summaries: Summary[];
   questions: Question[];
+  reviewHistory: ReviewRecord[];
+  quizHistory: QuizAttempt[];
 }
 
 function removeDemoData(stored: StoredLibrary) {
@@ -22,21 +26,31 @@ function removeDemoData(stored: StoredLibrary) {
   return {
     ...stored,
     schemaVersion: STORAGE_VERSION,
-    subjects: stored.subjects.filter((subject) => !demoSubjectIds.has(subject.id)),
+    subjects: stored.subjects
+      .filter((subject) => !demoSubjectIds.has(subject.id))
+      .map((subject) => ({
+        ...subject,
+        title: subject.title.slice(0, MAX_TITLE_LENGTH),
+        topics: subject.topics.map((topic) => ({ ...topic, title: topic.title.slice(0, MAX_TITLE_LENGTH) })),
+      })),
     flashcards: stored.flashcards.filter((flashcard) => !demoFlashcardIds.has(flashcard.id)),
-    summaries: stored.summaries ?? [],
+    summaries: (stored.summaries ?? []).map((summary) => ({ ...summary, title: summary.title.slice(0, MAX_TITLE_LENGTH) })),
     questions: stored.questions ?? [],
+    reviewHistory: stored.reviewHistory ?? [],
+    quizHistory: stored.quizHistory ?? [],
   };
 }
 
 function getLibraryFileUri(userKey: string) {
   const directory = FileSystem.documentDirectory;
-  if (!directory) {
-    throw new Error("O diretório local do aplicativo não está disponível");
-  }
+  if (!directory) return null;
 
   const safeUserKey = encodeURIComponent(userKey.toLowerCase().trim());
   return `${directory}${LIBRARY_DIRECTORY}/${safeUserKey}.json`;
+}
+
+function getLibraryStorageKey(userKey: string) {
+  return `${LIBRARY_STORAGE_PREFIX}${encodeURIComponent(userKey.toLowerCase().trim())}`;
 }
 
 async function ensureDirectoryExists() {
@@ -56,13 +70,24 @@ export async function loadLibrary(userKey: string, defaults: Omit<StoredLibrary,
   const fileUri = getLibraryFileUri(userKey);
 
   try {
+    if (!fileUri) {
+      const storedText = await AsyncStorage.getItem(getLibraryStorageKey(userKey));
+      if (!storedText) return { ...defaults, updatedAt: new Date().toISOString() };
+
+      const stored = JSON.parse(storedText) as StoredLibrary;
+      if (![1, 2, 3, STORAGE_VERSION].includes(stored.schemaVersion) || !Array.isArray(stored.subjects) || !Array.isArray(stored.flashcards)) {
+        return { ...defaults, updatedAt: new Date().toISOString() };
+      }
+      return removeDemoData(stored);
+    }
+
     const fileInfo = await FileSystem.getInfoAsync(fileUri);
     if (!fileInfo.exists) {
       return { ...defaults, updatedAt: new Date().toISOString() };
     }
 
     const stored = JSON.parse(await FileSystem.readAsStringAsync(fileUri)) as StoredLibrary;
-    if (![1, 2, STORAGE_VERSION].includes(stored.schemaVersion) || !Array.isArray(stored.subjects) || !Array.isArray(stored.flashcards)) {
+    if (![1, 2, 3, STORAGE_VERSION].includes(stored.schemaVersion) || !Array.isArray(stored.subjects) || !Array.isArray(stored.flashcards)) {
       return { ...defaults, updatedAt: new Date().toISOString() };
     }
 
@@ -79,6 +104,8 @@ export async function saveLibrary(
   flashcards: Flashcard[],
   summaries: Summary[],
   questions: Question[],
+  reviewHistory: ReviewRecord[],
+  quizHistory: QuizAttempt[],
 ) {
   const data: StoredLibrary = {
     schemaVersion: STORAGE_VERSION,
@@ -87,14 +114,25 @@ export async function saveLibrary(
     flashcards,
     summaries,
     questions,
+    reviewHistory,
+    quizHistory,
   };
 
   const previousSave = saveQueues.get(userKey) ?? Promise.resolve();
   const nextSave = previousSave
     .catch(() => undefined)
     .then(async () => {
+      if (!FileSystem.documentDirectory) {
+        await AsyncStorage.setItem(getLibraryStorageKey(userKey), JSON.stringify(data));
+        return;
+      }
+
       await ensureDirectoryExists();
       const fileUri = getLibraryFileUri(userKey);
+      if (!fileUri) {
+        await AsyncStorage.setItem(getLibraryStorageKey(userKey), JSON.stringify(data));
+        return;
+      }
       await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(data));
     });
 

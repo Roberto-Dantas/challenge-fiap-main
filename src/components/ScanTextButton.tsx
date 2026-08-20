@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useSettings } from "../context/SettingsContext";
@@ -15,6 +15,8 @@ interface ScanTextButtonProps {
   scannerTitle?: string;
   /** "full": botão grande com fundo (ex: Home). "compact": botão pequeno tipo ícone+texto (ex: dentro de um form). */
   variant?: "full" | "compact";
+  iconOnly?: boolean;
+  openRequest?: number;
 }
 
 export default function ScanTextButton({
@@ -22,10 +24,16 @@ export default function ScanTextButton({
   label = "Escanear texto",
   scannerTitle,
   variant = "full",
+  iconOnly = false,
+  openRequest = 0,
 }: ScanTextButtonProps) {
   const { colors } = useSettings();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [scannerVisible, setScannerVisible] = useState(false);
+
+  useEffect(() => {
+    if (openRequest > 0) setScannerVisible(true);
+  }, [openRequest]);
 
   return (
     <>
@@ -38,9 +46,9 @@ export default function ScanTextButton({
           <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
         </Pressable>
       ) : (
-        <Pressable style={styles.compactButton} onPress={() => setScannerVisible(true)}>
-          <Ionicons name="camera-outline" size={16} color={colors.primary} />
-          <Text style={styles.compactButtonText}>{label}</Text>
+        <Pressable style={iconOnly ? styles.iconOnlyButton : styles.compactButton} onPress={() => setScannerVisible(true)} accessibilityLabel={label || "Escanear texto"}>
+          <Ionicons name={iconOnly ? "image-outline" : "camera-outline"} size={iconOnly ? 18 : 16} color={colors.white} />
+          {!iconOnly && <Text style={styles.compactButtonText}>{label}</Text>}
         </Pressable>
       )}
 
@@ -97,4 +105,5 @@ const createStyles = (colors: ThemeColors) =>
       fontWeight: "700",
       color: colors.primary,
     },
+    iconOnlyButton: { alignItems: "center", backgroundColor: colors.primary, borderRadius: 10, height: 32, justifyContent: "center", marginBottom: 8, width: 32 },
   });

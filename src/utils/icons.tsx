@@ -48,6 +48,10 @@ export function getTabIcon(
         ? focused
           ? "library"
           : "library-outline"
+        : routeName === "Estatísticas"
+          ? focused
+            ? "stats-chart"
+            : "stats-chart-outline"
         : focused
           ? "person"
           : "person-outline";

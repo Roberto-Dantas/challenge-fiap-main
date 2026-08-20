@@ -2,19 +2,22 @@ import { Ionicons } from "@expo/vector-icons";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
 import { useMemo, useState } from "react";
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import CreateFlashcardModal from "../components/CreateFlashcardModal";
 import CreateQuestionModal from "../components/CreateQuestionModal";
+import Reveal from "../components/Reveal";
 import CreateSummaryModal from "../components/CreateSummaryModal";
 import { useLibrary } from "../context/LibraryContext";
 import { useSettings } from "../context/SettingsContext";
 import { LibraryStackParamList, Question } from "../types";
 import { ThemeColors } from "../theme/colors";
+import { shareQuestionPdf, shareSummaryPdf } from "../services/pdfExportService";
 
 type Props = NativeStackScreenProps<LibraryStackParamList, "ContentDetail">;
 type ContentTab = "flashcards" | "summaries" | "questions";
+type FlashcardFilter = "all" | "new" | "due" | "hard";
 
 export default function ContentDetailScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
@@ -30,9 +33,11 @@ export default function ContentDetailScreen({ navigation, route }: Props) {
     deleteSummary,
     addQuestion,
     deleteQuestion,
+    addQuizAttempt,
   } = useLibrary();
   const [activeTab, setActiveTab] = useState<ContentTab>("flashcards");
   const [searchQuery, setSearchQuery] = useState("");
+  const [flashcardFilter, setFlashcardFilter] = useState<FlashcardFilter>("all");
   const [flashcardModalVisible, setFlashcardModalVisible] = useState(false);
   const [summaryModalVisible, setSummaryModalVisible] = useState(false);
   const [questionModalVisible, setQuestionModalVisible] = useState(false);
@@ -42,12 +47,20 @@ export default function ContentDetailScreen({ navigation, route }: Props) {
   const [quizScore, setQuizScore] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [quizFinished, setQuizFinished] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
 
   const flashcards = getFlashcardsByTopic(topicId);
   const summaries = getSummariesByTopic(topicId);
   const questions = getQuestionsByTopic(topicId);
   const query = searchQuery.trim().toLowerCase();
-  const filteredFlashcards = flashcards.filter((card) => !query || card.front.toLowerCase().includes(query) || card.back.toLowerCase().includes(query));
+  const filteredFlashcards = flashcards.filter((card) => {
+    const matchesSearch = !query || card.front.toLowerCase().includes(query) || card.back.toLowerCase().includes(query);
+    const matchesFilter = flashcardFilter === "all"
+      || (flashcardFilter === "new" && !card.reviewed)
+      || (flashcardFilter === "due" && (card.nextReviewAt === undefined || card.nextReviewAt <= Date.now()))
+      || (flashcardFilter === "hard" && card.difficulty === "hard");
+    return matchesSearch && matchesFilter;
+  });
   const filteredSummaries = summaries.filter((summary) => !query || summary.title.toLowerCase().includes(query) || summary.content.toLowerCase().includes(query));
   const filteredQuestions = questions.filter((question) => !query || question.prompt.toLowerCase().includes(query) || question.options.some((option) => option.toLowerCase().includes(query)));
   const selectedSummary = summaries.find((summary) => summary.id === selectedSummaryId);
@@ -58,47 +71,69 @@ export default function ContentDetailScreen({ navigation, route }: Props) {
     const studyCards = unreviewedCards.length > 0 ? unreviewedCards : dueCards.length > 0 ? dueCards : flashcards;
     if (studyCards.length === 0) return;
     const selectedIndex = flashcardId ? studyCards.findIndex((card) => card.id === flashcardId) : studyCards.findIndex((card) => card.id === flashcards[startIndex]?.id);
-    navigation.navigate("FlashcardStudy", { topicId, subjectTitle, subjectSubtitle, topicTitle, startIndex: selectedIndex >= 0 ? selectedIndex : 0, flashcardId, reviewOnlyUnreviewed: !flashcardId && unreviewedCards.length > 0 });
+    const reviewMode = unreviewedCards.length > 0 ? "new" : dueCards.length > 0 ? "due" : "all";
+    navigation.navigate("FlashcardStudy", { topicId, subjectTitle, subjectSubtitle, topicTitle, startIndex: selectedIndex >= 0 ? selectedIndex : 0, flashcardId, reviewMode });
+  }
+
+  async function handleExportQuestion(question: Question) {
+    if (exportingPdf) return;
+    setExportingPdf(true);
+    try {
+      await shareQuestionPdf({ subjectTitle, topicTitle }, question);
+    } catch (error) {
+      Alert.alert("Não foi possível gerar o PDF", error instanceof Error ? error.message : "Tente novamente.");
+    } finally {
+      setExportingPdf(false);
+    }
   }
 
   function renderFlashcards() {
     return (
       <>
-        {filteredFlashcards.length > 0 && <Pressable style={styles.studyBanner} onPress={() => handleStartStudy()}><View style={styles.bannerIcon}><Ionicons name="play" size={20} color={colors.primary} /></View><View style={styles.bannerText}><Text style={styles.bannerTitle}>Estudar flashcards</Text><Text style={styles.bannerSubtitle}>{flashcards.length} cards disponíveis</Text></View><Ionicons name="chevron-forward" size={20} color={colors.textMuted} /></Pressable>}
+        <View style={styles.flashcardFilters}>{([ ["all", "Todos"], ["new", "Novos"], ["due", "Hoje"], ["hard", "Difíceis"] ] as [FlashcardFilter, string][]).map(([key, label]) => <Pressable key={key} style={[styles.filterChip, flashcardFilter === key && styles.filterChipActive]} onPress={() => setFlashcardFilter(key)}><Text style={[styles.filterChipText, flashcardFilter === key && styles.filterChipTextActive]}>{label}</Text></Pressable>)}</View>
+        {filteredFlashcards.length > 0 && <Pressable style={styles.studyBanner} onPress={() => handleStartStudy()}><View style={styles.bannerIcon}><Ionicons name="play" size={20} color={colors.primary} /></View><View style={styles.bannerText}><Text style={styles.bannerTitle}>{flashcards.filter((card) => !card.reviewed).length > 0 ? "Aprender cards novos" : flashcards.some((card) => card.nextReviewAt === undefined || card.nextReviewAt <= Date.now()) ? "Revisar cards de hoje" : "Estudar todos os cards"}</Text><Text style={styles.bannerSubtitle}>{filteredFlashcards.length} cards nesta seleção</Text></View><Ionicons name="chevron-forward" size={20} color={colors.textMuted} /></Pressable>}
         {filteredFlashcards.length === 0 ? <EmptyState icon="layers-outline" title="Nenhum flashcard ainda" description="Crie cartões com pergunta e resposta para revisar este conteúdo." onPress={() => setFlashcardModalVisible(true)} buttonLabel="Criar flashcard" styles={styles} colors={colors} /> : filteredFlashcards.map((card, cardIndex) => <Pressable key={`${card.id}-${cardIndex}`} style={styles.itemCard} onPress={() => handleStartStudy(cardIndex, card.id)}><View style={styles.itemIcon}><Ionicons name="layers-outline" size={19} color={colors.primary} /></View><View style={styles.itemBody}><Text style={styles.itemTitle}>{card.front}</Text><Text style={styles.itemDescription} numberOfLines={2}>{card.back}</Text></View><Ionicons name="chevron-forward" size={18} color={colors.textMuted} /></Pressable>)}
       </>
     );
   }
 
   function renderSummaries() {
-    return filteredSummaries.length === 0 ? <EmptyState icon="document-text-outline" title="Nenhum resumo ainda" description="Organize as ideias principais deste conteúdo em um texto rápido de consultar." onPress={() => setSummaryModalVisible(true)} buttonLabel="Criar resumo" styles={styles} colors={colors} /> : <>{filteredSummaries.map((summary, summaryIndex) => <Pressable key={`${summary.id}-${summaryIndex}`} style={styles.itemCard} onPress={() => setSelectedSummaryId(summary.id)}><View style={[styles.itemIcon, { backgroundColor: colors.primary + "18" }]}><Ionicons name="document-text-outline" size={19} color={colors.primary} /></View><View style={styles.itemBody}><Text style={styles.itemTitle}>{summary.title}</Text><Text style={styles.itemDescription} numberOfLines={3}>{summary.content}</Text></View><Ionicons name="chevron-forward" size={18} color={colors.textMuted} /></Pressable>)}</>;
+    return filteredSummaries.length === 0 ? <EmptyState icon="document-text-outline" title="Nenhum resumo ainda" description="Organize as ideias principais deste conteúdo em um texto rápido de consultar." onPress={() => setSummaryModalVisible(true)} buttonLabel="Criar resumo" styles={styles} colors={colors} /> : <>{filteredSummaries.map((summary, summaryIndex) => <View key={`${summary.id}-${summaryIndex}`} style={styles.itemCard}><Pressable style={styles.itemCardMain} onPress={() => setSelectedSummaryId(summary.id)}><View style={[styles.itemIcon, { backgroundColor: colors.primary + "18" }]}><Ionicons name="document-text-outline" size={19} color={colors.primary} /></View><View style={styles.itemBody}><Text style={styles.itemTitle}>{summary.title}</Text><Text style={styles.itemDescription} numberOfLines={3}>{summary.content}</Text></View><Ionicons name="chevron-forward" size={18} color={colors.textMuted} /></Pressable><Pressable style={styles.exportItemButton} onPress={() => void (async () => { setExportingPdf(true); try { await shareSummaryPdf({ subjectTitle, topicTitle }, summary.title, summary.content); } catch (error) { Alert.alert("Não foi possível gerar o PDF", error instanceof Error ? error.message : "Tente novamente."); } finally { setExportingPdf(false); } })()} disabled={exportingPdf} accessibilityLabel="Exportar resumo em PDF"><Ionicons name="download-outline" size={19} color={colors.primary} /></Pressable></View>)}</>;
   }
 
   function confirmDeleteSummary(summaryId: string) {
+    const removeSummary = () => { deleteSummary(summaryId); setSelectedSummaryId(null); };
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      if (window.confirm("Excluir resumo? Esta ação não pode ser desfeita.")) removeSummary();
+      return;
+    }
     Alert.alert("Excluir resumo?", "Esta ação não pode ser desfeita.", [
       { text: "Cancelar", style: "cancel" },
-      { text: "Excluir", style: "destructive", onPress: () => { deleteSummary(summaryId); setSelectedSummaryId(null); } },
+      { text: "Excluir", style: "destructive", onPress: removeSummary },
     ]);
   }
 
   function confirmDeleteQuestion(questionId: string) {
+    const removeQuestion = () => {
+      deleteQuestion(questionId);
+      setQuizQuestions((current) => current.filter((question) => question.id !== questionId));
+      setSelectedAnswer(null);
+      if (quizQuestions.length <= 1) {
+        setQuizIndex(0);
+        setQuizFinished(false);
+      } else if (quizIndex >= quizQuestions.length - 1) {
+        setQuizIndex(quizQuestions.length - 2);
+      }
+    };
+
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      if (window.confirm("Excluir exercício? Esta ação não pode ser desfeita.")) removeQuestion();
+      return;
+    }
+
     Alert.alert("Excluir exercício?", "Esta ação não pode ser desfeita.", [
       { text: "Cancelar", style: "cancel" },
-      {
-        text: "Excluir",
-        style: "destructive",
-        onPress: () => {
-          deleteQuestion(questionId);
-          setQuizQuestions((current) => current.filter((question) => question.id !== questionId));
-          setSelectedAnswer(null);
-          if (quizQuestions.length <= 1) {
-            setQuizIndex(0);
-            setQuizFinished(false);
-          } else if (quizIndex >= quizQuestions.length - 1) {
-            setQuizIndex(quizQuestions.length - 2);
-          }
-        },
-      },
+      { text: "Excluir", style: "destructive", onPress: removeQuestion },
     ]);
   }
 
@@ -125,6 +160,7 @@ export default function ContentDetailScreen({ navigation, route }: Props) {
   function nextQuizQuestion() {
     if (selectedAnswer === null) return;
     if (quizIndex >= quizQuestions.length - 1) {
+      addQuizAttempt({ topicId, score: quizScore + (selectedAnswer === quizQuestions[quizIndex]?.correctOption ? 1 : 0), total: quizQuestions.length });
       setQuizFinished(true);
       return;
     }
@@ -159,22 +195,39 @@ export default function ContentDetailScreen({ navigation, route }: Props) {
   return (
     <View style={styles.container}>
       <LinearGradient colors={[colors.primaryLight, colors.primary, colors.primaryDark]} style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <View style={styles.headerTop}><Pressable onPress={() => navigation.goBack()} hitSlop={8}><Ionicons name="arrow-back" size={24} color={colors.white} /></Pressable><View style={styles.headerActions}><Pressable hitSlop={8}><Ionicons name="share-outline" size={22} color={colors.white} /></Pressable><Pressable hitSlop={8}><Ionicons name="bookmark-outline" size={22} color={colors.white} /></Pressable></View></View>
+        <View style={styles.headerTop}><Pressable onPress={() => navigation.goBack()} hitSlop={8}><Ionicons name="arrow-back" size={24} color={colors.white} /></Pressable><View style={styles.headerActions} /></View>
         <Text style={styles.subjectTitle}>{subjectTitle}</Text><Text style={styles.subjectSubtitle}>{subjectSubtitle}</Text><Text style={styles.topicTitle}>{topicTitle}</Text>
         <View style={styles.searchContainer}><Ionicons name="search" size={18} color="rgba(255,255,255,0.7)" /><TextInput style={styles.searchInput} placeholder="Pesquisar neste conteúdo" placeholderTextColor="rgba(255,255,255,0.6)" value={searchQuery} onChangeText={setSearchQuery} /></View>
       </LinearGradient>
       <View style={styles.tabs}>{tabData.map((tab) => <Pressable key={tab.key} style={[styles.tab, activeTab === tab.key && styles.activeTab]} onPress={() => setActiveTab(tab.key)}><Ionicons name={tab.icon} size={18} color={activeTab === tab.key ? colors.primary : colors.textMuted} /><Text style={[styles.tabText, activeTab === tab.key && styles.activeTabText]}>{tab.label}</Text><Text style={[styles.tabCount, activeTab === tab.key && styles.activeTabText]}>{tab.count}</Text></Pressable>)}</View>
+      <Reveal style={{ flex: 1 }}>
       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
         <View style={styles.sectionHeader}><View><Text style={styles.sectionTitle}>{tabData.find((tab) => tab.key === activeTab)?.label}</Text><Text style={styles.sectionSubtitle}>Conteúdo salvo nesta matéria</Text></View><Pressable style={styles.addButton} onPress={() => activeTab === "flashcards" ? setFlashcardModalVisible(true) : activeTab === "summaries" ? setSummaryModalVisible(true) : setQuestionModalVisible(true)}><Ionicons name="add" size={18} color={colors.white} /><Text style={styles.addButtonText}>Adicionar</Text></Pressable></View>
         {activeTab === "flashcards" ? renderFlashcards() : activeTab === "summaries" ? renderSummaries() : renderQuestions()}
+        {activeTab === "questions" && quizQuestions.length === 0 && questions.length > 0 && (
+          <View style={styles.questionExportList}>
+            {filteredQuestions.map((question, questionIndex) => (
+              <View key={`export-${question.id}`} style={styles.questionExportRow}>
+                <View style={styles.questionExportBody}>
+                  <Text style={styles.questionExportLabel}>Exercício {questionIndex + 1}</Text>
+                  <Text style={styles.questionExportText} numberOfLines={2}>{question.prompt}</Text>
+                </View>
+                <Pressable onPress={() => void handleExportQuestion(question)} disabled={exportingPdf} hitSlop={8} accessibilityLabel={`Exportar exercício ${questionIndex + 1} em PDF`}>
+                  <Ionicons name="download-outline" size={20} color={colors.primary} />
+                </Pressable>
+              </View>
+            ))}
+          </View>
+        )}
       </ScrollView>
+      </Reveal>
       <CreateFlashcardModal visible={flashcardModalVisible} onClose={() => setFlashcardModalVisible(false)} onCreate={(front, back) => addFlashcard({ topicId, front, back })} />
       <CreateSummaryModal visible={summaryModalVisible} onClose={() => setSummaryModalVisible(false)} onCreate={(title, content) => addSummary({ topicId, title, content })} />
       <CreateQuestionModal visible={questionModalVisible} onClose={() => setQuestionModalVisible(false)} onCreate={(prompt, options, correctOption, explanation) => addQuestion({ topicId, prompt, options, correctOption, explanation })} />
       <Modal visible={Boolean(selectedSummary)} animationType="slide" transparent onRequestClose={() => setSelectedSummaryId(null)}>
         <View style={styles.summaryOverlay}>
           <View style={styles.summaryModal}>
-            <View style={styles.summaryModalHeader}><Text style={styles.summaryModalTitle}>{selectedSummary?.title}</Text><View style={styles.summaryModalActions}><Pressable onPress={() => selectedSummary && confirmDeleteSummary(selectedSummary.id)} hitSlop={8} accessibilityLabel="Excluir resumo"><Ionicons name="trash-outline" size={21} color={colors.danger} /></Pressable><Pressable onPress={() => setSelectedSummaryId(null)} hitSlop={8}><Ionicons name="close" size={24} color={colors.textSecondary} /></Pressable></View></View>
+            <View style={styles.summaryModalHeader}><Text style={styles.summaryModalTitle}>{selectedSummary?.title}</Text><View style={styles.summaryModalActions}><Pressable onPress={() => selectedSummary && void (async () => { setExportingPdf(true); try { await shareSummaryPdf({ subjectTitle, topicTitle }, selectedSummary.title, selectedSummary.content); } catch (error) { Alert.alert("Não foi possível gerar o PDF", error instanceof Error ? error.message : "Tente novamente."); } finally { setExportingPdf(false); } })()} hitSlop={8} accessibilityLabel="Exportar resumo em PDF" disabled={exportingPdf}><Ionicons name={exportingPdf ? "hourglass-outline" : "download-outline"} size={21} color={colors.primary} /></Pressable><Pressable onPress={() => selectedSummary && confirmDeleteSummary(selectedSummary.id)} hitSlop={8} accessibilityLabel="Excluir resumo"><Ionicons name="trash-outline" size={21} color={colors.danger} /></Pressable><Pressable onPress={() => setSelectedSummaryId(null)} hitSlop={8}><Ionicons name="close" size={24} color={colors.textSecondary} /></Pressable></View></View>
             <ScrollView showsVerticalScrollIndicator={false}><Text style={styles.summaryModalContent}>{selectedSummary?.content}</Text></ScrollView>
           </View>
         </View>
@@ -206,11 +259,24 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   content: { flex: 1 },
   contentContainer: { padding: 20, paddingBottom: 36 },
   sectionHeader: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", marginBottom: 18 },
+  sectionActions: { alignItems: "center", flexDirection: "row", gap: 8 },
   sectionTitle: { color: colors.text, fontSize: 19, fontWeight: "800" },
   sectionSubtitle: { color: colors.textSecondary, fontSize: 12, marginTop: 3 },
   addButton: { alignItems: "center", backgroundColor: colors.primary, borderRadius: 10, flexDirection: "row", gap: 5, paddingHorizontal: 12, paddingVertical: 9 },
   addButtonText: { color: colors.white, fontSize: 13, fontWeight: "700" },
+  itemCardMain: { alignItems: "flex-start", flex: 1, flexDirection: "row" },
+  exportItemButton: { alignItems: "center", justifyContent: "center", padding: 8 },
+  questionExportList: { marginTop: 12 },
+  questionExportRow: { alignItems: "center", backgroundColor: colors.cardBackground, borderColor: colors.border, borderRadius: 14, borderWidth: 1, flexDirection: "row", marginBottom: 10, padding: 13 },
+  questionExportBody: { flex: 1, marginRight: 12 },
+  questionExportLabel: { color: colors.primary, fontSize: 11, fontWeight: "800", marginBottom: 4 },
+  questionExportText: { color: colors.text, fontSize: 14, lineHeight: 19 },
   studyBanner: { alignItems: "center", borderColor: colors.primary, borderRadius: 14, borderWidth: 1, flexDirection: "row", marginBottom: 14, padding: 14 },
+  flashcardFilters: { flexDirection: "row", gap: 8, marginBottom: 12 },
+  filterChip: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 18, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8 },
+  filterChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  filterChipText: { color: colors.textSecondary, fontSize: 12, fontWeight: "700" },
+  filterChipTextActive: { color: colors.white },
   bannerIcon: { alignItems: "center", backgroundColor: colors.primary + "18", borderRadius: 20, height: 40, justifyContent: "center", marginRight: 12, width: 40 },
   bannerText: { flex: 1 },
   bannerTitle: { color: colors.text, fontSize: 15, fontWeight: "800" },

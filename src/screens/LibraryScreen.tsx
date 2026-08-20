@@ -5,6 +5,7 @@ import { useCallback, useMemo, useRef, useState, useEffect } from "react";
 import {
   Alert,
   FlatList,
+  Platform,
   RefreshControl,
   Pressable,
   StyleSheet,
@@ -17,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import CreateSubjectModal from "../components/CreateSubjectModal";
 import CreateTopicModal from "../components/CreateTopicModal";
 import SubjectCard from "../components/SubjectCard";
+import Reveal from "../components/Reveal";
 import { useLibrary } from "../context/LibraryContext";
 import { useSettings } from "../context/SettingsContext";
 import { LibraryStackParamList, Subject, Topic } from "../types";
@@ -26,6 +28,12 @@ type Props = NativeStackScreenProps<LibraryStackParamList, "LibraryMain">;
 
 type SortOption = "alphabetical" | "progress" | "due";
 type FilterOption = "all" | "due" | "reviewed" | "notReviewed";
+type SubjectWithStats = Subject & {
+  reviewedCount: number;
+  dueCount: number;
+  unreviewedCount: number;
+  topicStats: Record<string, { total: number; due: number; reviewed: number; hard: number }>;
+};
 
 export default function LibraryScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
@@ -41,7 +49,7 @@ export default function LibraryScreen({ navigation, route }: Props) {
   const [filterOption, setFilterOption] = useState<FilterOption>("all");
   const [showFilters, setShowFilters] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const listRef = useRef<FlatList<Subject>>(null);
+  const listRef = useRef<FlatList<SubjectWithStats>>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -110,6 +118,15 @@ export default function LibraryScreen({ navigation, route }: Props) {
         dueCount,
         unreviewedCount,
         progress,
+        topicStats: Object.fromEntries(subject.topics.map((topic) => {
+          const cards = subjectFlashcards.filter((card) => card.topicId === topic.id);
+          return [topic.id, {
+            total: cards.length,
+            due: cards.filter((card) => card.nextReviewAt === undefined || card.nextReviewAt <= now).length,
+            reviewed: cards.filter((card) => card.reviewed).length,
+            hard: cards.filter((card) => card.difficulty === "hard").length,
+          }];
+        })),
       };
     });
   }, [subjects, flashcards]);
@@ -158,6 +175,16 @@ export default function LibraryScreen({ navigation, route }: Props) {
   }
 
   function handleDeleteSubject(subject: Subject) {
+    const removeSubject = () => {
+      deleteSubject(subject.id);
+      setExpandedId(null);
+    };
+
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      if (window.confirm(`Excluir ${subject.title}? A matéria e todos os seus conteúdos serão apagados.`)) removeSubject();
+      return;
+    }
+
     Alert.alert(
       `Excluir ${subject.title}?`,
       "A matéria e todos os seus conteúdos, flashcards, resumos e questões serão apagados.",
@@ -166,10 +193,7 @@ export default function LibraryScreen({ navigation, route }: Props) {
         {
           text: "Excluir",
           style: "destructive",
-          onPress: () => {
-            deleteSubject(subject.id);
-            setExpandedId(null);
-          },
+          onPress: removeSubject,
         },
       ],
     );
@@ -182,6 +206,14 @@ export default function LibraryScreen({ navigation, route }: Props) {
       subjectSubtitle: subject.subtitle,
       topicTitle: topic.title,
     });
+  }
+
+  function handleSubjectStudy(subject: Subject & { subjectFlashcards?: typeof flashcards }) {
+    const topic = subject.topics.find((item) => {
+      const cards = flashcards.filter((card) => card.topicId === item.id);
+      return cards.some((card) => card.nextReviewAt === undefined || card.nextReviewAt <= Date.now() || !card.reviewed);
+    }) ?? subject.topics[0];
+    if (topic) handleTopicPress(subject, topic);
   }
 
   function handleCreateTopic(title: string) {
@@ -199,7 +231,7 @@ export default function LibraryScreen({ navigation, route }: Props) {
     });
   }
 
-  function renderSubject({ item }: { item: Subject }) {
+  function renderSubject({ item }: { item: SubjectWithStats }) {
     return (
       <SubjectCard
         subject={item}
@@ -208,6 +240,11 @@ export default function LibraryScreen({ navigation, route }: Props) {
         onTopicPress={(topic) => handleTopicPress(item, topic)}
         onAddTopic={() => setTopicModalSubjectId(item.id)}
         onDelete={() => handleDeleteSubject(item)}
+        onStudy={() => handleSubjectStudy(item)}
+        reviewedCount={item.reviewedCount}
+        dueCount={item.dueCount}
+        unreviewedCount={item.unreviewedCount}
+        topicStats={item.topicStats}
       />
     );
   }
@@ -310,6 +347,7 @@ export default function LibraryScreen({ navigation, route }: Props) {
         ))}
       </View>
 
+      <Reveal style={{ flex: 1 }}>
       <FlatList
         ref={listRef}
         data={filteredSubjects}
@@ -323,6 +361,7 @@ export default function LibraryScreen({ navigation, route }: Props) {
           <Text style={styles.emptyText}>Nenhuma matéria encontrada</Text>
         }
       />
+      </Reveal>
 
       <Pressable
         style={[styles.fab, { bottom: insets.bottom + 16 }]}

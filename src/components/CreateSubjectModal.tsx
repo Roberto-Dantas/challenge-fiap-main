@@ -11,6 +11,7 @@ import {
 
 import { useSettings } from "../context/SettingsContext";
 import { ThemeColors } from "../theme/colors";
+import { MAX_TITLE_LENGTH } from "../types";
 
 interface CreateSubjectModalProps {
   visible: boolean;
@@ -73,7 +74,9 @@ export default function CreateSubjectModal({
             placeholderTextColor={colors.textMuted}
             value={title}
             onChangeText={setTitle}
+            maxLength={MAX_TITLE_LENGTH}
           />
+          <Text style={styles.characterCount}>{title.length}/{MAX_TITLE_LENGTH}</Text>
 
           <Text style={styles.label}>Descrição</Text>
           <TextInput
@@ -170,6 +173,7 @@ const createStyles = (colors: ThemeColors) =>
     fontSize: 16,
     fontWeight: "600",
   },
+  characterCount: { color: colors.textMuted, fontSize: 11, marginBottom: 8, marginTop: -10, textAlign: "right" },
   iconGrid: {
     flexDirection: "row",
     flexWrap: "wrap",

@@ -5,6 +5,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 
 import { useSettings } from "../context/SettingsContext";
 import { generateLocalSummary } from "../services/localAiService";
 import { ThemeColors } from "../theme/colors";
+import { MAX_TITLE_LENGTH } from "../types";
 import ScanTextButton from "./ScanTextButton";
 
 interface CreateSummaryModalProps {
@@ -36,7 +37,7 @@ export default function CreateSummaryModal({ visible, onClose, onCreate }: Creat
     setIsGenerating(true);
     try {
       const generated = await generateLocalSummary(text);
-      setTitle(generated.title);
+      setTitle(generated.title.slice(0, MAX_TITLE_LENGTH));
       setContent(generated.content);
     } finally {
       setIsGenerating(false);
@@ -53,7 +54,8 @@ export default function CreateSummaryModal({ visible, onClose, onCreate }: Creat
           </View>
           <ScrollView keyboardShouldPersistTaps="handled">
             <Text style={styles.label}>Título</Text>
-            <TextInput style={styles.input} value={title} onChangeText={setTitle} placeholder="Ex: Conceitos principais" placeholderTextColor={colors.textMuted} />
+            <TextInput style={styles.input} value={title} onChangeText={setTitle} maxLength={MAX_TITLE_LENGTH} placeholder="Ex: Conceitos principais" placeholderTextColor={colors.textMuted} />
+            <Text style={styles.characterCount}>{title.length}/{MAX_TITLE_LENGTH}</Text>
             <Text style={styles.label}>Resumo</Text>
             <ScanTextButton
               variant="compact"
@@ -83,4 +85,5 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   button: { alignItems: "center", backgroundColor: colors.primary, borderRadius: 12, marginTop: 20, paddingVertical: 14 },
   disabled: { opacity: 0.5 },
   buttonText: { color: colors.white, fontSize: 15, fontWeight: "700" },
+  characterCount: { color: colors.textMuted, fontSize: 11, marginBottom: 4, marginTop: -8, textAlign: "right" },
 });

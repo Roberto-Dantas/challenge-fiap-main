@@ -16,70 +16,33 @@ import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import SubjectStatsModal from "../components/SubjectStatsModal";
 import ScanTextButton from "../components/ScanTextButton";
+import Reveal from "../components/Reveal";
+import { AnimatedMotiView } from "../components/AnimatedMotiView";
 
 import { useLibrary } from "../context/LibraryContext";
 import { useSettings } from "../context/SettingsContext";
 import { RootTabParamList } from "../types";
 import { ThemeColors } from "../theme/colors";
 import { getSubjectIcon } from "../utils/icons";
+import { getCurrentStreak, getTodayReviewCount } from "../utils/studyMetrics";
 
 const actionItems = [
   { key: "quiz", title: "Quiz", icon: "school-outline" },
   { key: "resumos", title: "Resumos", icon: "document-text-outline" },
 ] as const;
 
-function isSameDay(timestamp: number, compareTo: number) {
-  const date = new Date(timestamp);
-  const other = new Date(compareTo);
-  return (
-    date.getFullYear() === other.getFullYear() &&
-    date.getMonth() === other.getMonth() &&
-    date.getDate() === other.getDate()
-  );
-}
-
-function calculateStreak(flashcards: any[]) {
-  if (flashcards.length === 0) return 0;
-  
-  const reviewedDays = new Set<string>();
-  flashcards.forEach((card) => {
-    if (card.lastReviewedAt) {
-      const date = new Date(card.lastReviewedAt);
-      const dayKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
-      reviewedDays.add(dayKey);
-    }
-  });
-  
-  if (reviewedDays.size === 0) return 0;
-  
-  let streak = 0;
-  const today = new Date();
-  let currentDate = new Date(today);
-  
-  // Check if today has reviews
-  const todayKey = `${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`;
-  if (!reviewedDays.has(todayKey)) {
-    // If no review today, check yesterday
-    currentDate.setDate(currentDate.getDate() - 1);
-  }
-  
-  while (true) {
-    const dayKey = `${currentDate.getFullYear()}-${currentDate.getMonth()}-${currentDate.getDate()}`;
-    if (reviewedDays.has(dayKey)) {
-      streak++;
-      currentDate.setDate(currentDate.getDate() - 1);
-    } else {
-      break;
-    }
-  }
-  
-  return streak;
-}
+type SearchResult = {
+  id: string;
+  title: string;
+  subtitle: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  onPress: () => void;
+};
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<BottomTabNavigationProp<RootTabParamList>>();
-  const { subjects, flashcards, getDueFlashcards, getFlashcardsByTopic, refreshLibrary } = useLibrary();
+  const { subjects, flashcards, getDueFlashcards, getFlashcardsByTopic, getReviewHistory, refreshLibrary } = useLibrary();
   const { colors, theme, setTheme, dailyGoal } = useSettings();
   const styles = useMemo(() => useMemoStyles(colors), [colors]);
 
@@ -88,6 +51,7 @@ export default function HomeScreen() {
   const [showDueModal, setShowDueModal] = useState(false);
   const [showPerformanceModal, setShowPerformanceModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [scanRequest, setScanRequest] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
 
   useFocusEffect(
@@ -113,17 +77,19 @@ export default function HomeScreen() {
     }
   }, [refreshLibrary]);
 
-  const dueFlashcards = useMemo(() => getDueFlashcards().slice(0, 3), [getDueFlashcards]);
+  const allDueFlashcards = useMemo(() => getDueFlashcards(), [getDueFlashcards]);
+  const dueFlashcards = useMemo(() => allDueFlashcards.slice(0, 3), [allDueFlashcards]);
+  const reviewHistory = getReviewHistory();
   const reviewedTodayCount = useMemo(
-    () => flashcards.filter((card) => card.lastReviewedAt && isSameDay(card.lastReviewedAt, Date.now())).length,
-    [flashcards],
+    () => getTodayReviewCount(reviewHistory),
+    [reviewHistory],
   );
   const notReviewedCount = useMemo(
     () => flashcards.filter((card) => !card.reviewed).length,
     [flashcards],
   );
   
-  const streak = useMemo(() => calculateStreak(flashcards), [flashcards]);
+  const streak = useMemo(() => getCurrentStreak(reviewHistory), [reviewHistory]);
   const dailyGoalProgress = Math.min(reviewedTodayCount, dailyGoal);
   const dailyGoalPercent = Math.round((dailyGoalProgress / dailyGoal) * 100);
 
@@ -140,6 +106,49 @@ export default function HomeScreen() {
         subject.topics.some((topic) => topic.title.toLowerCase().includes(query)),
     );
   }, [subjects, searchQuery]);
+
+  const searchResults = useMemo<SearchResult[]>(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return [];
+
+    const results: SearchResult[] = [];
+    subjects.forEach((subject) => {
+      if (subject.title.toLowerCase().includes(query) || subject.subtitle.toLowerCase().includes(query)) {
+        results.push({
+          id: `subject-${subject.id}`,
+          title: subject.title,
+          subtitle: "Matéria na Biblioteca",
+          icon: subject.icon === "default" ? "folder-open-outline" : "book-outline",
+          onPress: () => navigation.navigate("Biblioteca"),
+        });
+      }
+      subject.topics.forEach((topic) => {
+        if (!topic.title.toLowerCase().includes(query)) return;
+        results.push({
+          id: `topic-${topic.id}`,
+          title: topic.title,
+          subtitle: subject.title,
+          icon: "document-text-outline",
+          onPress: () => navigation.navigate("Biblioteca" as any, { screen: "LibraryMain", params: { openTopicId: topic.id, openSubjectTitle: subject.title, openSubjectSubtitle: subject.subtitle, openTopicTitle: topic.title } }),
+        });
+      });
+    });
+
+    const actionMatches = (terms: string[]) => terms.some((term) => term.includes(query) || query.includes(term));
+    if (actionMatches(["revisão", "revisar", "agendado", "cards"])) {
+      results.push({ id: "action-review", title: "Revisão de hoje", subtitle: `${allDueFlashcards.length} cards agendados`, icon: "flash-outline", onPress: () => allDueFlashcards[0] ? navigation.navigate("Biblioteca" as any, { screen: "FlashcardStudy", params: { topicId: allDueFlashcards[0].topicId, subjectTitle: subjects.find((subject) => subject.topics.some((topic) => topic.id === allDueFlashcards[0].topicId))?.title ?? "", topicTitle: subjects.flatMap((subject) => subject.topics).find((topic) => topic.id === allDueFlashcards[0].topicId)?.title ?? "", reviewMode: "due" } }) : setShowDueModal(true) });
+    }
+    if (actionMatches(["escanear", "foto", "ocr", "imagem"])) {
+      results.push({ id: "action-scan", title: "Escanear texto", subtitle: "Criar cards com a câmera", icon: "image-outline", onPress: () => setScanRequest((value) => value + 1) });
+    }
+    if (actionMatches(["novo", "criar", "card", "flashcard"])) {
+      results.push({ id: "action-new", title: "Novo card", subtitle: "Criar manualmente na Biblioteca", icon: "add-circle-outline", onPress: () => navigation.navigate("Biblioteca") });
+    }
+    if (actionMatches(["estatística", "desempenho", "progresso"])) {
+      results.push({ id: "action-stats", title: "Estatísticas", subtitle: "Ver seu desempenho", icon: "stats-chart-outline", onPress: () => navigation.navigate("Estatísticas") });
+    }
+    return results.slice(0, 8);
+  }, [allDueFlashcards, navigation, searchQuery, subjects]);
 
   const dueModalItems = useMemo(() => getDueFlashcards().slice(0, 6), [getDueFlashcards]);
 
@@ -237,13 +246,17 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 16 }]}> 
+      <Reveal style={{ flex: 1 }}>
       <ScrollView
         ref={scrollRef}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.topBar}>
-          <Text style={[styles.brand, { color: colors.text }]}>NOTEZ</Text>
+          <View>
+            <Text style={[styles.brand, { color: colors.textMuted }]}>NOTEZ</Text>
+            <Text style={[styles.greeting, { color: colors.text }]}>Olá, Estudante 👋</Text>
+          </View>
           <View style={styles.topActions}>
             <Pressable
               style={[styles.themeButton, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}
@@ -251,7 +264,7 @@ export default function HomeScreen() {
               hitSlop={8}
               accessibilityLabel="Atualizar página"
             >
-              {refreshing ? <ActivityIndicator size="small" color={colors.primary} /> : <Ionicons name="refresh-outline" size={20} color={colors.text} />}
+              {refreshing ? <ActivityIndicator size="small" color={colors.primary} /> : <Ionicons name="notifications-outline" size={20} color={colors.textSecondary} />}
             </Pressable>
             <Pressable
               style={[styles.themeButton, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}
@@ -261,11 +274,11 @@ export default function HomeScreen() {
             >
               <Ionicons name={mode === "dark" ? "sunny-outline" : "moon-outline"} size={20} color={colors.text} />
             </Pressable>
+            <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+              <Text style={[styles.avatarText, { color: colors.white }]}>M</Text>
+            </View>
           </View>
         </View>
-
-        <Text style={[styles.greeting, { color: colors.text }]}>Olá, Estudante!</Text>
-        <Text style={[styles.greetingSubtitle, { color: colors.textSecondary }]}>Continue de onde parou</Text>
 
         <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}> 
           <Ionicons name="search-outline" size={20} color={colors.textMuted} />
@@ -275,106 +288,120 @@ export default function HomeScreen() {
             placeholderTextColor={colors.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
+            returnKeyType="search"
           />
         </View>
 
-        {/* Escanear texto (OCR) */}
-        <View style={styles.scanSection}>
-          <ScanTextButton
-            label="Escanear texto de uma foto"
-            scannerTitle="Escanear texto"
-            onTextExtracted={(text) => setScannedText(text)}
-          />
-
-          {scannedText && (
-            <View style={[styles.scanResultCard, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
-              <View style={styles.scanResultHeader}>
-                <Text style={[styles.scanResultTitle, { color: colors.text }]}>Texto reconhecido</Text>
-                <Pressable onPress={() => setScannedText(null)} hitSlop={8}>
-                  <Ionicons name="close" size={18} color={colors.textSecondary} />
-                </Pressable>
-              </View>
-              <Text style={[styles.scanResultText, { color: colors.textSecondary }]}>{scannedText}</Text>
-              <Pressable
-                style={[styles.scanResultAction, { borderColor: colors.primary }]}
-                onPress={() => navigation.navigate("Biblioteca")}
-              >
-                <Ionicons name="albums-outline" size={16} color={colors.primary} />
-                <Text style={[styles.scanResultActionText, { color: colors.primary }]}>
-                  Usar na Biblioteca para criar um flashcard
-                </Text>
+        {searchQuery.trim() && (
+          <View style={[styles.searchResults, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+            {searchResults.length > 0 ? searchResults.map((result) => (
+              <Pressable key={result.id} style={styles.searchResultRow} onPress={() => { setSearchQuery(""); result.onPress(); }}>
+                <View style={[styles.searchResultIcon, { backgroundColor: colors.primary + "18" }]}><Ionicons name={result.icon} size={17} color={colors.primary} /></View>
+                <View style={styles.searchResultBody}><Text style={[styles.searchResultTitle, { color: colors.text }]}>{result.title}</Text><Text style={[styles.searchResultSubtitle, { color: colors.textSecondary }]}>{result.subtitle}</Text></View>
+                <Ionicons name="arrow-up-outline" size={16} color={colors.textMuted} />
               </Pressable>
-            </View>
-          )}
-        </View>
-
-        {/* Streak & Daily Goal */}
-        <View style={[styles.streakCard, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
-          <View style={styles.streakRow}>
-            <View style={styles.streakItem}>
-              <View style={[styles.streakIcon, { backgroundColor: colors.primary + "20" }]}>
-                <Ionicons name="flame-outline" size={20} color={colors.primary} />
-              </View>
-              <View style={styles.streakInfo}>
-                <Text style={[styles.streakLabel, { color: colors.textSecondary }]}>Ofensiva</Text>
-                <Text style={[styles.streakValue, { color: colors.text }]}>{streak} dia{streak !== 1 ? "s" : ""}</Text>
-              </View>
-            </View>
-            <View style={styles.streakDivider} />
-            <View style={styles.streakItem}>
-              <View style={[styles.streakIcon, { backgroundColor: colors.warning + "20" || "#F59E0B20" }]}>
-                <Ionicons name="flag-outline" size={20} color={colors.warning || "#F59E0B"} />
-              </View>
-              <View style={styles.streakInfo}>
-                <Text style={[styles.streakLabel, { color: colors.textSecondary }]}>Meta diária</Text>
-                <Text style={[styles.streakValue, { color: colors.text }]}>{dailyGoalProgress}/{dailyGoal}</Text>
-              </View>
-            </View>
+            )) : <Text style={[styles.searchEmpty, { color: colors.textSecondary }]}>Nenhum material, tópico ou função encontrado.</Text>}
           </View>
-          <View style={styles.dailyGoalBarContainer}>
-            <View style={styles.dailyGoalBarBg}>
-              <View style={[styles.dailyGoalBarFill, { width: `${dailyGoalPercent}%` }]} />
-            </View>
-            <Text style={[styles.dailyGoalPercent, { color: colors.textSecondary }]}>{dailyGoalPercent}% concluído</Text>
-          </View>
-        </View>
-
-        {/* Revisão Express Button */}
-        {dueFlashcards.length > 0 && (
-          <Pressable
-            style={[styles.expressReviewButton, { backgroundColor: colors.primary }]}
-            onPress={() => {
-              navigation.navigate("Biblioteca" as any, {
-                screen: "FlashcardStudy",
-                params: {
-                  topicId: dueFlashcards[0].topicId,
-                  subjectTitle: subjects.find((subj) => subj.topics.some((topic) => topic.id === dueFlashcards[0].topicId))?.title ?? "",
-                  topicTitle: subjects.find((subj) => subj.topics.some((topic) => topic.id === dueFlashcards[0].topicId))?.topics.find((t) => t.id === dueFlashcards[0].topicId)?.title ?? "",
-                  reviewOnlyUnreviewed: true,
-                },
-              });
-            }}
-          >
-            <Ionicons name="flash-outline" size={20} color="#FFFFFF" />
-            <Text style={styles.expressReviewText}>Revisão Express ({dueFlashcards.length} cards)</Text>
-            <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
-          </Pressable>
         )}
+
+        {subjects.length === 0 && (
+          <View style={[styles.onboardingCard, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+            <View style={[styles.onboardingIcon, { backgroundColor: colors.primary + "18" }]}><Ionicons name="library-outline" size={24} color={colors.primary} /></View>
+            <Text style={[styles.onboardingTitle, { color: colors.text }]}>Comece criando sua primeira matéria</Text>
+            <Text style={[styles.onboardingText, { color: colors.textSecondary }]}>Organize seus conteúdos, crie tópicos e transforme suas anotações em cards de estudo.</Text>
+            <Pressable style={[styles.onboardingButton, { backgroundColor: colors.primary }]} onPress={() => navigation.navigate("Biblioteca")}>
+              <Ionicons name="add" size={17} color={colors.white} />
+              <Text style={[styles.onboardingButtonText, { color: colors.white }]}>Adicionar matéria</Text>
+            </Pressable>
+          </View>
+        )}
+
+        {subjects.length > 0 && flashcards.length === 0 && (
+          <View style={[styles.onboardingCard, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+            <View style={[styles.onboardingIcon, { backgroundColor: colors.primary + "18" }]}><Ionicons name="layers-outline" size={24} color={colors.primary} /></View>
+            <Text style={[styles.onboardingTitle, { color: colors.text }]}>Sua biblioteca está pronta</Text>
+            <Text style={[styles.onboardingText, { color: colors.textSecondary }]}>Agora adicione um tópico e crie seu primeiro flashcard para começar a estudar.</Text>
+            <Pressable style={[styles.onboardingButton, { backgroundColor: colors.primary }]} onPress={() => navigation.navigate("Biblioteca")}>
+              <Ionicons name="arrow-forward" size={17} color={colors.white} />
+              <Text style={[styles.onboardingButtonText, { color: colors.white }]}>Abrir Biblioteca</Text>
+            </Pressable>
+          </View>
+        )}
+
+        <AnimatedMotiView
+          style={[styles.streakCard, { backgroundColor: colors.primary, borderColor: colors.primaryDark }]}
+          from={{ scale: 0.97, opacity: 0.7 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: "spring", damping: 15, stiffness: 150 }}
+        >
+          <AnimatedMotiView
+            from={{ opacity: 0.12, scale: 0.92 }}
+            animate={{ opacity: [0.12, 0.28, 0.12], scale: [0.92, 1.04, 0.92] }}
+            transition={{ type: "timing", duration: 2200, loop: true }}
+            style={[styles.streakGlow, { backgroundColor: colors.primaryLight }]}
+          />
+          <View style={styles.streakOrbOne} />
+          <View style={styles.streakOrbTwo} />
+          <Text style={[styles.streakEyebrow, { color: colors.white }]}>OFENSIVA ATUAL</Text>
+          <View style={styles.streakHeadline}>
+            <AnimatedMotiView from={{ scale: 1 }} animate={{ scale: [1, 1.16, 1] }} transition={{ type: "timing", duration: 1400, loop: true }}>
+              <Text style={[styles.streakBigNumber, { color: colors.white }]}>{streak}</Text>
+            </AnimatedMotiView>
+            <Text style={[styles.streakBigLabel, { color: colors.white }]}>dia{streak !== 1 ? "s" : ""} 🔥</Text>
+          </View>
+          <View style={styles.goalHeader}>
+            <Text style={[styles.goalLabel, { color: colors.white }]}>Meta diária</Text>
+            <Text style={[styles.goalCount, { color: colors.white }]}>{dailyGoalProgress} / {dailyGoal} cards</Text>
+          </View>
+          <View style={[styles.dailyGoalBarBg, { backgroundColor: "rgba(255,255,255,0.24)" }]}>
+            <AnimatedMotiView animate={{ width: `${dailyGoalPercent}%` }} transition={{ type: "spring", damping: 16, stiffness: 130 }} style={[styles.dailyGoalBarFill, { backgroundColor: colors.white }]} />
+          </View>
+        </AnimatedMotiView>
 
         <View style={[styles.statusRow, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}> 
           <View style={styles.statusItem}>
-            <Text style={[styles.statusLabel, { color: colors.textSecondary }]}>Revisados hoje</Text>
+            <Text style={[styles.statusLabel, { color: colors.textSecondary }]}>Revisados</Text>
             <Text style={[styles.statusValue, { color: colors.primary }]}>{reviewedTodayCount}</Text>
           </View>
           <View style={styles.statusItem}>
-            <Text style={[styles.statusLabel, { color: colors.textSecondary }]}>Não revisados</Text>
+            <Text style={[styles.statusLabel, { color: colors.textSecondary }]}>Pendentes</Text>
             <Text style={[styles.statusValue, { color: colors.danger || "#EF4444" }]}>{notReviewedCount}</Text>
           </View>
           <View style={styles.statusItem}>
             <Text style={[styles.statusLabel, { color: colors.textSecondary }]}>Agendados</Text>
-            <Text style={[styles.statusValue, { color: colors.primary }]}>{dueFlashcards.length}</Text>
+            <Text style={[styles.statusValue, { color: colors.primary }]}>{allDueFlashcards.length}</Text>
           </View>
         </View>
+
+        <Text style={[styles.quickSectionLabel, { color: colors.textMuted }]}>AÇÕES RÁPIDAS</Text>
+        <View style={styles.quickActionsRow}>
+          <View style={[styles.quickAction, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+            <ScanTextButton iconOnly openRequest={scanRequest} scannerTitle="Escanear texto" variant="compact" onTextExtracted={(text) => setScannedText(text)} />
+            <Text style={[styles.quickActionTitle, { color: colors.text }]}>Escanear foto</Text>
+            <Text style={[styles.quickActionSubtitle, { color: colors.textSecondary }]}>Criar cards via câmera</Text>
+          </View>
+          <Pressable style={[styles.quickAction, { backgroundColor: colors.cardBackground, borderColor: colors.border }]} onPress={() => navigation.navigate("Biblioteca")}>
+            <View style={[styles.quickActionIcon, { backgroundColor: colors.primary }]}><Ionicons name="add" size={21} color={colors.white} /></View>
+            <Text style={[styles.quickActionTitle, { color: colors.text }]}>Novo card</Text>
+            <Text style={[styles.quickActionSubtitle, { color: colors.textSecondary }]}>Criar manualmente</Text>
+          </Pressable>
+        </View>
+
+        {scannedText && (
+          <View style={[styles.scanResultCard, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+            <View style={styles.scanResultHeader}>
+              <Text style={[styles.scanResultTitle, { color: colors.text }]}>Texto reconhecido</Text>
+              <Pressable onPress={() => setScannedText(null)} hitSlop={8}>
+                <Ionicons name="close" size={18} color={colors.textSecondary} />
+              </Pressable>
+            </View>
+            <Text style={[styles.scanResultText, { color: colors.textSecondary }]} numberOfLines={4}>{scannedText}</Text>
+            <Pressable style={[styles.scanResultAction, { borderColor: colors.primary }]} onPress={() => navigation.navigate("Biblioteca")}>
+              <Ionicons name="albums-outline" size={16} color={colors.primary} />
+              <Text style={[styles.scanResultActionText, { color: colors.primary }]}>Usar na Biblioteca</Text>
+            </Pressable>
+          </View>
+        )}
 
         <View style={styles.sectionHeader}>
           <View>
@@ -562,6 +589,7 @@ export default function HomeScreen() {
           </View>
         </Modal>
       </ScrollView>
+      </Reveal>
     </View>
   );
 }
@@ -580,7 +608,7 @@ const useMemoStyles = (colors: ThemeColors) =>
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      marginBottom: 24,
+      marginBottom: 18,
     },
     topActions: {
       flexDirection: "row",
@@ -595,20 +623,36 @@ const useMemoStyles = (colors: ThemeColors) =>
       borderWidth: 1,
     },
     brand: {
-      fontSize: 18,
-      fontWeight: "800",
-      letterSpacing: 1,
+      fontSize: 10,
+      fontWeight: "700",
+      letterSpacing: 2,
+      marginBottom: 4,
     },
     greeting: {
-      fontSize: 28,
+      fontSize: 20,
       fontWeight: "800",
-      marginBottom: 4,
+      marginBottom: 0,
     },
     greetingSubtitle: {
       fontSize: 16,
       color: colors.textSecondary,
       marginBottom: 20,
     },
+    avatar: { alignItems: "center", borderRadius: 20, height: 40, justifyContent: "center", width: 40 },
+    avatarText: { fontSize: 15, fontWeight: "900" },
+    searchResults: { borderRadius: 16, borderWidth: 1, marginBottom: 16, overflow: "hidden" },
+    searchResultRow: { alignItems: "center", borderBottomColor: colors.border, borderBottomWidth: 1, flexDirection: "row", gap: 10, paddingHorizontal: 12, paddingVertical: 10 },
+    searchResultIcon: { alignItems: "center", borderRadius: 9, height: 32, justifyContent: "center", width: 32 },
+    searchResultBody: { flex: 1 },
+    searchResultTitle: { fontSize: 13, fontWeight: "800" },
+    searchResultSubtitle: { fontSize: 11, marginTop: 2 },
+    searchEmpty: { fontSize: 13, padding: 16, textAlign: "center" },
+    onboardingCard: { borderRadius: 20, borderWidth: 1, marginBottom: 16, padding: 18 },
+    onboardingIcon: { alignItems: "center", borderRadius: 12, height: 44, justifyContent: "center", marginBottom: 12, width: 44 },
+    onboardingTitle: { fontSize: 17, fontWeight: "800", marginBottom: 6 },
+    onboardingText: { fontSize: 13, lineHeight: 20, marginBottom: 14 },
+    onboardingButton: { alignItems: "center", alignSelf: "flex-start", borderRadius: 11, flexDirection: "row", gap: 6, paddingHorizontal: 13, paddingVertical: 10 },
+    onboardingButtonText: { fontSize: 13, fontWeight: "800" },
     searchContainer: {
       flexDirection: "row",
       alignItems: "center",
@@ -664,12 +708,25 @@ const useMemoStyles = (colors: ThemeColors) =>
       fontWeight: "700",
     },
     streakCard: {
+      minHeight: 140,
+      overflow: "hidden",
+      position: "relative",
       borderRadius: 20,
       borderWidth: 1,
-      padding: 16,
+      padding: 20,
       marginBottom: 16,
-      backgroundColor: colors.cardBackground,
+      backgroundColor: colors.primary,
     },
+    streakOrbOne: { backgroundColor: "rgba(255,255,255,0.08)", borderRadius: 70, height: 140, position: "absolute", right: -40, top: -62, width: 140 },
+    streakOrbTwo: { backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 52, bottom: -42, height: 104, position: "absolute", right: 18, width: 104 },
+    streakGlow: { borderRadius: 140, height: 220, position: "absolute", right: -62, top: -46, width: 220 },
+    streakEyebrow: { fontSize: 10, fontWeight: "700", letterSpacing: 1.5, marginBottom: 6, opacity: 0.8 },
+    streakHeadline: { alignItems: "center", flexDirection: "row", gap: 8, marginBottom: 12 },
+    streakBigNumber: { fontSize: 42, fontWeight: "900", lineHeight: 45 },
+    streakBigLabel: { fontSize: 17, fontWeight: "700" },
+    goalHeader: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", marginBottom: 6 },
+    goalLabel: { fontSize: 11, fontWeight: "600" },
+    goalCount: { fontSize: 12, fontWeight: "800" },
     streakRow: {
       flexDirection: "row",
       alignItems: "center",
@@ -720,6 +777,12 @@ const useMemoStyles = (colors: ThemeColors) =>
       backgroundColor: colors.primary,
       borderRadius: 4,
     },
+    quickSectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 1.6, marginBottom: 10, marginTop: 2 },
+    quickActionsRow: { flexDirection: "row", gap: 10, marginBottom: 22 },
+    quickAction: { borderRadius: 16, borderWidth: 1, flex: 1, minHeight: 104, padding: 12 },
+    quickActionIcon: { alignItems: "center", borderRadius: 10, height: 32, justifyContent: "center", marginBottom: 8, width: 32 },
+    quickActionTitle: { fontSize: 13, fontWeight: "800", marginBottom: 3 },
+    quickActionSubtitle: { fontSize: 11 },
     dailyGoalPercent: {
       fontSize: 12,
       marginTop: 6,

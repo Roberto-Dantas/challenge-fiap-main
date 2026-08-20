@@ -4,11 +4,21 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useLibrary } from "../context/LibraryContext";
-import { colors } from "../theme/colors";
+import { useSettings } from "../context/SettingsContext";
+import { ThemeColors } from "../theme/colors";
+import { getCurrentStreak, getLongestStreak, getRecentActivity, getReviewAccuracy } from "../utils/studyMetrics";
+import Reveal from "../components/Reveal";
 
 export default function StatsScreen() {
   const insets = useSafeAreaInsets();
-  const { subjects, flashcards } = useLibrary();
+  const { subjects, flashcards, getReviewHistory } = useLibrary();
+  const { colors } = useSettings();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const reviewHistory = getReviewHistory();
+  const currentStreak = getCurrentStreak(reviewHistory);
+  const longestStreak = getLongestStreak(reviewHistory);
+  const accuracy = getReviewAccuracy(reviewHistory);
+  const activity = getRecentActivity(reviewHistory);
 
   const perSubject = useMemo(() => {
     return subjects.map((subject) => {
@@ -17,7 +27,9 @@ export default function StatsScreen() {
       );
 
       const reviewed = subjectFlashcards.filter((f) => f.reviewed).length;
-      const ok = subjectFlashcards.filter((f) => f.ok).length;
+      const topicIds = new Set(subject.topics.map((topic) => topic.id));
+      const subjectHistory = reviewHistory.filter((review) => topicIds.has(review.topicId));
+      const ok = subjectHistory.filter((review) => review.difficulty !== "hard").length;
       const toReview = subjectFlashcards.filter((f) => f.reviewed && !f.ok).length;
 
       return {
@@ -27,22 +39,21 @@ export default function StatsScreen() {
         ok,
         toReview,
         total: subjectFlashcards.length,
+        totalReviews: subjectHistory.length,
       };
     });
-  }, [subjects, flashcards]);
+  }, [subjects, flashcards, reviewHistory]);
 
   // total number of review actions across all flashcards
   const totalReviewed = useMemo(() => {
-    return flashcards.reduce((sum, f) => sum + (f.reviewedCount ?? 0), 0);
-  }, [flashcards]);
+    return reviewHistory.length;
+  }, [reviewHistory]);
 
   // compute max value for chart scaling (use totalReviews and ok counts)
   const perSubjectExtended = useMemo(() => {
     return perSubject.map((s) => ({
       ...s,
-      totalReviews: flashcards
-        .filter((f) => subjects.find((sub) => sub.id === s.id)?.topics.some((t) => t.id === f.topicId))
-        .reduce((sum, f) => sum + (f.reviewedCount ?? 0), 0),
+      totalReviews: s.totalReviews,
     }));
   }, [perSubject, flashcards, subjects]);
 
@@ -74,9 +85,16 @@ export default function StatsScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 16 }]}> 
+      <Reveal style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.headerRow}>
           <Text style={styles.title}>Estatísticas</Text>
+        </View>
+
+        <View style={styles.heroStats}>
+          <View style={styles.heroStat}><Ionicons name="flame" size={20} color={colors.warning} /><Text style={styles.heroValue}>{currentStreak}</Text><Text style={styles.heroLabel}>dias seguidos</Text></View>
+          <View style={styles.heroStat}><Ionicons name="trending-up" size={20} color={colors.primary} /><Text style={styles.heroValue}>{accuracy}%</Text><Text style={styles.heroLabel}>precisão</Text></View>
+          <View style={styles.heroStat}><Ionicons name="trophy" size={20} color={colors.warning} /><Text style={styles.heroValue}>{longestStreak}</Text><Text style={styles.heroLabel}>maior streak</Text></View>
         </View>
 
         <View style={styles.topStatsRow}>
@@ -99,8 +117,18 @@ export default function StatsScreen() {
           </View>
         </View>
 
+        <Text style={styles.sectionTitle}>Flashcards por dia</Text>
+        <View style={styles.activityCard}>
+          <View style={styles.activityBars}>
+            {activity.map((day) => <View key={day.key} style={styles.activityDay}><View style={styles.activityTrack}><View style={[styles.activityFill, { height: `${Math.min(100, day.count * 16 + (day.count > 0 ? 8 : 0))}%` }]} /></View><Text style={styles.activityLabel}>{day.label}</Text><Text style={styles.activityCount}>{day.count || "-"}</Text></View>)}
+          </View>
+          <Text style={styles.activityHint}>{reviewHistory.length === 0 ? "Comece uma revisão para criar seu histórico." : `Você já fez ${reviewHistory.length} revisões no total.`}</Text>
+        </View>
+
         <Text style={styles.sectionTitle}>Desempenho por matéria</Text>
-        {perSubjectExtended.map((s, subjectIndex) => {
+        {perSubjectExtended.length === 0 ? (
+          <View style={styles.emptyStatsCard}><Ionicons name="bar-chart-outline" size={34} color={colors.primary} /><Text style={styles.emptyStatsTitle}>Ainda não há dados de desempenho</Text><Text style={styles.emptyStatsText}>Adicione uma matéria, crie flashcards e faça sua primeira revisão para acompanhar seu progresso aqui.</Text></View>
+        ) : perSubjectExtended.map((s, subjectIndex) => {
           const percent = s.total > 0 ? Math.round((s.reviewed / s.total) * 100) : 0;
           const reviews = s.totalReviews ?? 0;
           const corrects = s.ok ?? 0;
@@ -161,18 +189,23 @@ export default function StatsScreen() {
           })
         )}
       </ScrollView>
+      </Reveal>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { paddingHorizontal: 20, paddingBottom: 40 },
-  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
+  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
   title: { fontSize: 24, fontWeight: "800", color: colors.text },
   sectionTitle: { fontSize: 15, fontWeight: "700", color: colors.textSecondary, marginBottom: 12 },
   topStatsRow: { flexDirection: "row", justifyContent: "flex-start", gap: 12, marginBottom: 12 },
-  totalCard: { backgroundColor: colors.cardBackground, borderRadius: 14, padding: 14, minWidth: 140, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: colors.border },
+  heroStats: { flexDirection: "row", gap: 8, marginBottom: 16 },
+  heroStat: { alignItems: "center", backgroundColor: colors.cardBackground, borderColor: colors.border, borderRadius: 14, borderWidth: 1, flex: 1, padding: 12 },
+  heroValue: { color: colors.text, fontSize: 22, fontWeight: "900", marginTop: 5 },
+  heroLabel: { color: colors.textSecondary, fontSize: 11, marginTop: 3, textAlign: "center" },
+  totalCard: { alignItems: "center", backgroundColor: colors.cardBackground, borderColor: colors.border, borderRadius: 14, borderWidth: 1, flex: 1, justifyContent: "center", minWidth: 0, padding: 14 },
   totalLabel: { fontSize: 13, color: colors.textSecondary },
   totalNumber: { fontSize: 20, fontWeight: "800", color: colors.text },
   statCard: { flexDirection: "row", alignItems: "center", backgroundColor: colors.cardBackground, borderRadius: 16, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: colors.border },
@@ -181,10 +214,18 @@ const styles = StyleSheet.create({
   statSubtitle: { fontSize: 13, color: colors.textSecondary, marginTop: 4 },
   progressBarBg: { height: 10, backgroundColor: colors.background, borderRadius: 8, overflow: "hidden", marginTop: 10 },
   progressBarFill: { height: 10, backgroundColor: colors.primary },
-  chartCard: { marginLeft: 12, backgroundColor: colors.cardBackground, borderRadius: 14, padding: 10, minWidth: 140, borderWidth: 1, borderColor: colors.border, justifyContent: "center" },
-  miniChart: { flexDirection: "row", alignItems: "flex-end", height: 60, gap: 8, marginTop: 8 },
+  chartCard: { backgroundColor: colors.cardBackground, borderColor: colors.border, borderRadius: 14, borderWidth: 1, flex: 1, justifyContent: "center", minWidth: 0, padding: 10 },
+  miniChart: { alignItems: "flex-end", flexDirection: "row", gap: 5, height: 60, marginTop: 8 },
   miniBarWrap: { flex: 1, alignItems: "center", justifyContent: "flex-end", marginHorizontal: 4, backgroundColor: "transparent" },
   miniBarFill: { width: "100%", backgroundColor: colors.primary, borderRadius: 6 },
+  activityCard: { backgroundColor: colors.cardBackground, borderColor: colors.border, borderRadius: 16, borderWidth: 1, marginBottom: 18, padding: 14 },
+  activityBars: { alignItems: "flex-end", flexDirection: "row", gap: 10, height: 112, justifyContent: "space-between" },
+  activityDay: { alignItems: "center", flex: 1, height: "100%", justifyContent: "flex-end" },
+  activityTrack: { backgroundColor: colors.background, borderRadius: 6, height: 76, justifyContent: "flex-end", overflow: "hidden", width: "100%" },
+  activityFill: { backgroundColor: colors.primary, borderRadius: 6, minHeight: 3, width: "100%" },
+  activityLabel: { color: colors.textSecondary, fontSize: 10, marginTop: 6, textTransform: "uppercase" },
+  activityCount: { color: colors.text, fontSize: 10, fontWeight: "800", marginTop: 2 },
+  activityHint: { color: colors.textSecondary, fontSize: 12, marginTop: 12 },
   statRight: { alignItems: "center" },
   statNumber: { fontSize: 16, fontWeight: "800", color: colors.text },
   statLabel: { fontSize: 12, color: colors.textSecondary },
@@ -196,6 +237,9 @@ const styles = StyleSheet.create({
   correctsBar: { height: 10, backgroundColor: "#34D399", borderRadius: 8 },
   smallValue: { width: 30, textAlign: "right", color: colors.text, fontWeight: "700" },
   empty: { textAlign: "center", color: colors.textSecondary, marginTop: 8 },
+  emptyStatsCard: { alignItems: "center", backgroundColor: colors.cardBackground, borderColor: colors.border, borderRadius: 16, borderWidth: 1, marginBottom: 16, padding: 24 },
+  emptyStatsTitle: { color: colors.text, fontSize: 16, fontWeight: "800", marginTop: 12, textAlign: "center" },
+  emptyStatsText: { color: colors.textSecondary, fontSize: 13, lineHeight: 20, marginTop: 8, textAlign: "center" },
   reviewRow: { flexDirection: "row", alignItems: "center", backgroundColor: colors.cardBackground, borderRadius: 12, padding: 12, marginBottom: 10, borderWidth: 1, borderColor: colors.border },
   reviewIcon: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center", marginRight: 12 },
   reviewInfo: { flex: 1 },

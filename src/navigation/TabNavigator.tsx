@@ -10,13 +10,14 @@ import { useSettings } from "../context/SettingsContext";
 import { RootTabParamList } from "../types";
 import { getTabIcon } from "../utils/icons";
 import LibraryStack from "./LibraryStack";
+import StatsScreen from "../screens/StatsScreen";
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 
 export default function TabNavigator() {
   const { colors } = useSettings();
   const navigation = useNavigation();
-  const routes: (keyof RootTabParamList)[] = ["Home", "Biblioteca", "Conta"];
+  const routes: (keyof RootTabParamList)[] = ["Home", "Biblioteca", "Estatísticas", "Conta"];
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, gesture) =>
@@ -85,6 +86,11 @@ export default function TabNavigator() {
         name="Biblioteca"
         component={LibraryStack}
         options={{ tabBarLabel: "Biblioteca" }}
+        />
+        <Tab.Screen
+        name="Estatísticas"
+        component={StatsScreen}
+        options={{ tabBarLabel: "Stats" }}
         />
         <Tab.Screen
         name="Conta"
